@@ -7,7 +7,8 @@
 <style>
 :root{
   --ink:#141838; --panel:#222858; --panel2:#2d3470; --mint:#cdeee0; --sky:#bfe0f3;
-  --gold:#ffcf4a; --text:#f4f6ff; --muted:#9aa3d6; --bad:#ff6b81;
+  --gold:#ffcf4a; --text:#f4f6ff;
+  --ca:#cdeee0; --cb:#bfe0f3; --cend:#ffcf4a; --frame:#ffcf4a; --num:#1b2a3acc; --grid:rgba(30,60,90,.5); --muted:#9aa3d6; --bad:#ff6b81;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--ink);color:var(--text);
@@ -53,11 +54,11 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-o
 .bubble{position:absolute;top:-26px;left:50%;transform:translateX(-50%);font-size:26px;animation:pop .25s ease-out}
 @keyframes pop{from{transform:translateX(-50%) scale(.2)}to{transform:translateX(-50%) scale(1)}}
 #boardWrap{width:min(calc(100vw - 16px),50dvh);aspect-ratio:1;position:relative;
-  border:6px solid var(--gold);border-radius:10px;background:var(--gold);flex:none}
+  border:6px solid var(--frame);border-radius:10px;background:var(--frame);flex:none}
 #board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(10,1fr)}
-.cell{position:relative;color:#1b2a3acc;font-size:min(2.6vw,1.6dvh);font-weight:700;padding:1px 3px;box-shadow:inset 0 0 0 .6px rgba(30,60,90,.5)}
-.cell.a{background:var(--mint)} .cell.b{background:var(--sky)}
-.cell.end{background:var(--gold);color:#2a2100}
+.cell{position:relative;color:var(--num);font-size:min(2.6vw,1.6dvh);font-weight:700;padding:1px 3px;box-shadow:inset 0 0 0 .6px var(--grid)}
+.cell.a{background:var(--ca)} .cell.b{background:var(--cb)}
+.cell.end{background:var(--cend);color:#2a2100}
 #lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .tok{will-change:left,top;position:absolute;width:4.6%;height:4.6%;border-radius:50%;border:2px solid #fff;
   transform:translate(-50%,-50%);transition:left .17s linear,top .17s linear;box-shadow:0 2px 4px #0006;z-index:3}
@@ -132,10 +133,24 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
 #lobby .btn,.card>.btn{width:100%}
 .idbox{display:flex;align-items:center;gap:10px;color:var(--muted)}
 .idbox b{color:var(--gold);font-size:28px;letter-spacing:3px;direction:ltr;flex:1;text-align:center}
+#fx{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
+#screens,#chat{position:relative;z-index:1}
+#fx span{position:absolute;top:-8vh;animation:fall linear infinite;opacity:.85}
+@keyframes fall{0%{transform:translate(0,-10vh) rotate(0)}50%{transform:translate(30px,55vh) rotate(180deg)}100%{transform:translate(-10px,115vh) rotate(360deg)}}
+#fx.twinkle span{animation-name:twinkle;animation-timing-function:ease-in-out}
+@keyframes twinkle{0%,100%{opacity:.15;transform:scale(.7)}50%{opacity:1;transform:scale(1.2)}}
+.themes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tcard{background:var(--panel2);border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;border:3px solid transparent;font-weight:700}
+.tcard.on{border-color:var(--gold)}
+.tcard .sw{display:grid;grid-template-columns:repeat(4,1fr);width:100%;height:34px;border-radius:8px;overflow:hidden;border:2px solid var(--frm,#fff4)}
+.tcard .ic{font-size:30px;line-height:1}
+#themeBtn2{font-size:18px}
+@media (prefers-reduced-motion:reduce){#fx{display:none}}
 @media (prefers-reduced-motion:reduce){.tok{transition:none}.bubble{animation:none}}
 </style>
 </head>
 <body>
+<div id="fx" aria-hidden="true"></div>
 <div id="screens">
 
   <section id="home" class="screen on">
@@ -143,6 +158,7 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
     <div class="me">
       <input id="nameIn" maxlength="14" placeholder="اكتب اسمك" autocomplete="off">
       <button class="idpill" id="copyId" aria-label="نسخ رقمك">رقمك <b id="myIdVal">------</b> 📋</button>
+      <button class="idpill" data-themes aria-label="المظهر">🎨</button>
     </div>
     <div class="tiles">
       <button class="tile t1" id="tInvite"><span class="ic">📨</span>دعوة صديق<i id="onlineN"></i></button>
@@ -162,7 +178,7 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
   </section>
 
   <section id="game" class="screen">
-    <div id="top"><span id="gcode"></span><button id="mute" aria-label="الصوت">🔊</button><button data-leave>خروج</button></div>
+    <div id="top"><span id="gcode"></span><button id="themeBtn2" data-themes aria-label="المظهر">🎨</button><button id="mute" aria-label="الصوت">🔊</button><button data-leave>خروج</button></div>
     <div id="chips"></div>
     <div id="boardWrap">
       <div id="board"></div>
@@ -196,6 +212,11 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
   <h3>📨 اختر صديقاً للدعوة</h3>
   <div id="plist"></div>
   <button class="btn alt" id="pickAdd">➕ إضافة صديق</button>
+  <button class="btn alt" data-close>إغلاق</button>
+</div></div>
+<div class="modal" id="themep"><div class="card">
+  <h3>🎨 اختر المظهر</h3>
+  <div class="themes" id="themeList"></div>
   <button class="btn alt" data-close>إغلاق</button>
 </div></div>
 <div class="modal" id="botp"><div class="card">
@@ -263,8 +284,10 @@ function xy(n){const r=Math.floor((n-1)/10);let c=(n-1)%10;if(r%2)c=9-c;return{x
   const b=$('board');
   for(let vr=0;vr<10;vr++){const r=9-vr;for(let vc=0;vc<10;vc++){
     const c=r%2?9-vc:vc,n=r*10+c+1,d=document.createElement('div');
-    d.className='cell '+((r+c)%2?'a':'b')+(n===100?' end':'');d.textContent=n;b.appendChild(d)}}
-  const NS='http://www.w3.org/2000/svg',svg=$('lines');
+    d.className='cell '+((vr+vc)%2?'a':'b')+(n===100?' end':'');d.textContent=n;b.appendChild(d)}}
+})();
+function drawArt(){
+  const T=THEMES[themeKey],NS='http://www.w3.org/2000/svg',svg=$('lines');svg.innerHTML='';
   const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);svg.appendChild(e);return e};
   const pts=a=>a.map(p=>p[0].toFixed(2)+','+p[1].toFixed(2)).join(' ');
 
@@ -277,17 +300,17 @@ function xy(n){const r=Math.floor((n-1)/10);let c=(n-1)%10;if(r%2)c=9-c;return{x
     for(let t=1.5;t<L;t+=3.3){
       const cx=x1+ux*t,cy=y1+uy*t;
       el('line',{x1:cx+px+.3,y1:cy+py+.4,x2:cx-px+.3,y2:cy-py+.4,stroke:'#000','stroke-opacity':.2,'stroke-width':1,'stroke-linecap':'round'});
-      el('line',{x1:cx+px,y1:cy+py,x2:cx-px,y2:cy-py,stroke:'#7a4a1f','stroke-width':1,'stroke-linecap':'round'});
-      el('line',{x1:cx+px*.9,y1:cy+py*.9-.2,x2:cx-px*.9,y2:cy-py*.9-.2,stroke:'#c98f52','stroke-width':.35,'stroke-linecap':'round'});
+      el('line',{x1:cx+px,y1:cy+py,x2:cx-px,y2:cy-py,stroke:T.lad.rung,'stroke-width':1,'stroke-linecap':'round'});
+      el('line',{x1:cx+px*.9,y1:cy+py*.9-.2,x2:cx-px*.9,y2:cy-py*.9-.2,stroke:T.lad.rungHi,'stroke-width':.35,'stroke-linecap':'round'});
     }
     for(const sg of [1,-1]){
-      el('line',{x1:x1+px*sg,y1:y1+py*sg,x2:x2+px*sg,y2:y2+py*sg,stroke:'#8a5526','stroke-width':1.3,'stroke-linecap':'round'});
-      el('line',{x1:x1+px*sg-.25,y1:y1+py*sg-.25,x2:x2+px*sg-.25,y2:y2+py*sg-.25,stroke:'#d9ad78','stroke-width':.4,'stroke-linecap':'round'});
+      el('line',{x1:x1+px*sg,y1:y1+py*sg,x2:x2+px*sg,y2:y2+py*sg,stroke:T.lad.rail,'stroke-width':1.3,'stroke-linecap':'round'});
+      el('line',{x1:x1+px*sg-.25,y1:y1+py*sg-.25,x2:x2+px*sg-.25,y2:y2+py*sg-.25,stroke:T.lad.hi,'stroke-width':.4,'stroke-linecap':'round'});
     }
   }
 
   // ---- الأفاعي: جسم متموج رفيع نحو الذيل، بقع وحزوز، رأس بعيون ولسان ----
-  const PAL=[['#3fae4f','#1c6b2e','#c3f5a8'],['#e8892b','#8a3d0b','#ffd9a0'],['#9a62e0','#4a2a8c','#e3ccff'],['#e0525e','#7d1b27','#ffc9ce'],['#27b3ad','#0d5f5b','#b4f3ef']];
+  const PAL=T.snakes;
   let k=0;
   for(const s in SNAKES){
     const a=xy(+s),z=xy(SNAKES[s]),dx=z.x-a.x,dy=z.y-a.y,len=Math.hypot(dx,dy),ux=dx/len,uy=dy/len,nx=-uy,ny=ux;
@@ -327,7 +350,8 @@ function xy(n){const r=Math.floor((n-1)/10);let c=(n-1)%10;if(r%2)c=9-c;return{x
       el('circle',{cx:ex+fx*.15,cy:ey+fy*.15,r:.28,fill:'#111'});
     }
   }
-})();
+}
+
 
 // ---------- الحالة ----------
 let social=null,pendingInvite=null,winShown=false,inviteQueue=[];
@@ -573,6 +597,76 @@ const em=$('emojis');EMOJIS.forEach(e=>{const b=document.createElement('button')
 function sendChat(){const v=$('chatIn').value.trim();if(!v)return;tx({t:'chat',text:v});$('chatIn').value=''}
 $('chatSend').onclick=sendChat;
 $('chatIn').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat()});
+
+// ---------- المظاهر ----------
+const THEMES={
+  classic:{name:'الكلاسيكي',ic:'🎲',ink:'#141838',panel:'#222858',panel2:'#2d3470',muted:'#9aa3d6',
+    a:'#cdeee0',b:'#bfe0f3',end:'#ffcf4a',frame:'#ffcf4a',num:'#1b2a3acc',grid:'rgba(30,60,90,.5)',
+    bg:'radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70%),#141838',
+    snakes:[['#3fae4f','#1c6b2e','#c3f5a8'],['#e8892b','#8a3d0b','#ffd9a0'],['#9a62e0','#4a2a8c','#e3ccff'],['#e0525e','#7d1b27','#ffc9ce'],['#27b3ad','#0d5f5b','#b4f3ef']],
+    lad:{rail:'#8a5526',hi:'#d9ad78',rung:'#7a4a1f',rungHi:'#c98f52'},fx:null},
+  desert:{name:'الصحراء',ic:'🏜️',ink:'#8a3f12',panel:'#6b3a14',panel2:'#85501f',muted:'#f0cf9e',
+    a:'#f6dfae',b:'#e9c47f',end:'#ffcf4a',frame:'#b0652a',num:'#5b3410',grid:'rgba(110,60,20,.45)',
+    bg:'radial-gradient(circle at 82% 6%,#ffe9a8 0,#ffc65a 7%,transparent 30%),linear-gradient(180deg,#5a2d0c 0%,#9c4a16 55%,#c9772a 100%)',
+    snakes:[['#c99a4a','#7a5420','#f3dba0'],['#b8512a','#6d2a12','#f0b08a'],['#8c9a3a','#4a5416','#dfe8a0'],['#d9822b','#7d4210','#ffd7a0'],['#a3472f','#5e2314','#f0b9a8']],
+    lad:{rail:'#6e4318',hi:'#c99a5a',rung:'#5b3410',rungHi:'#b8884a'},fx:null},
+  snow:{name:'الثلج',ic:'❄️',ink:'#12335c',panel:'#1e3a5f',panel2:'#2a4f7d',muted:'#b9d6f2',
+    a:'#f7fcff',b:'#cfe6f6',end:'#ffe08a',frame:'#8cc0e6',num:'#29506f',grid:'rgba(40,90,130,.4)',
+    bg:'radial-gradient(800px 420px at 50% -5%,#5aa0d8 0%,transparent 70%),linear-gradient(180deg,#0f2a4d,#1d4e80)',
+    snakes:[['#9bd1f5','#3a7fb0','#ffffff'],['#6fb7e8','#2d6a9c','#e4f3ff'],['#b7a6f2','#5846a8','#efeaff'],['#7fe0d4','#2a8a80','#e0fffb'],['#e8f2fb','#7a98b5','#ffffff']],
+    lad:{rail:'#7c8fa3',hi:'#e8f2fb',rung:'#5f7388',rungHi:'#dbe9f5'},fx:{type:'fall',chars:['❄️','❅','❆']}},
+  spring:{name:'الربيع',ic:'🌸',ink:'#1f5a34',panel:'#2e6b3a',panel2:'#3d8a4a',muted:'#cfeccd',
+    a:'#e6f7c9',b:'#ffd9e8',end:'#ffe27a',frame:'#6cc36a',num:'#3d5a2c',grid:'rgba(60,110,50,.4)',
+    bg:'radial-gradient(800px 420px at 50% -5%,#8be08a 0%,transparent 70%),linear-gradient(180deg,#1f5a34,#2f7d46)',
+    snakes:[['#ff8fb8','#b8325f','#ffe1ee'],['#7ed957','#3b8a22','#e3ffc8'],['#ffd24d','#a87a00','#fff3c2'],['#ff7a6b','#a8362a','#ffd5cf'],['#5fc7a8','#1f7a62','#d4fff2']],
+    lad:{rail:'#5b8a3a',hi:'#a8d97a',rung:'#4a7430',rungHi:'#94c968'},fx:{type:'fall',chars:['🌸','🌼','🍃']}},
+  night:{name:'الليل',ic:'🌌',ink:'#1a0f4a',panel:'#1a1040',panel2:'#2a1a66',muted:'#a99cf5',
+    a:'#2e2a78',b:'#3b3590',end:'#ffcf4a',frame:'#7c5cff',num:'#d9d4ff',grid:'rgba(160,150,255,.35)',
+    bg:'radial-gradient(800px 420px at 50% -5%,#5b2fd0 0%,transparent 70%),linear-gradient(180deg,#0b0624,#1a0f4a)',
+    snakes:[['#ff4fd8','#8a1a78','#ffc3f4'],['#2ee6d6','#0a7f76','#c4fffa'],['#8c6bff','#3a22a8','#d8ccff'],['#ffb02e','#a35f00','#ffe2a8'],['#4fa3ff','#1a4f9e','#c8e4ff']],
+    lad:{rail:'#b28bff',hi:'#f0e2ff',rung:'#8d63e6',rungHi:'#e0cfff'},fx:{type:'twinkle',chars:['✦','✧','⋆']}}
+};
+let themeKey=localStorage.getItem('sl_theme');
+if(!THEMES[themeKey])themeKey='classic';
+function buildFx(T){
+  const fx=$('fx');fx.innerHTML='';fx.className=T.fx?T.fx.type:'';
+  if(!T.fx)return;
+  for(let i=0;i<16;i++){
+    const sp=document.createElement('span');
+    sp.textContent=T.fx.chars[Math.floor(Math.random()*T.fx.chars.length)];
+    sp.style.left=(Math.random()*100)+'%';
+    sp.style.fontSize=(10+Math.random()*14)+'px';
+    if(T.fx.type==='twinkle'){sp.style.top=(Math.random()*100)+'%';sp.style.animationDuration=(2+Math.random()*3)+'s';sp.style.color='#fff'}
+    else sp.style.animationDuration=(9+Math.random()*9)+'s';
+    sp.style.animationDelay=(-Math.random()*12)+'s';
+    fx.appendChild(sp);
+  }
+}
+function applyTheme(key){
+  if(!THEMES[key])key='classic';
+  themeKey=key;localStorage.setItem('sl_theme',key);
+  const T=THEMES[key],r=document.documentElement.style;
+  r.setProperty('--ink',T.ink);r.setProperty('--panel',T.panel);r.setProperty('--panel2',T.panel2);r.setProperty('--muted',T.muted);
+  r.setProperty('--ca',T.a);r.setProperty('--cb',T.b);r.setProperty('--cend',T.end);r.setProperty('--frame',T.frame);
+  r.setProperty('--num',T.num);r.setProperty('--grid',T.grid);
+  document.body.style.background=T.bg;
+  drawArt();buildFx(T);
+}
+function renderThemes(){
+  const box=$('themeList');box.innerHTML='';
+  Object.keys(THEMES).forEach(k=>{
+    const T=THEMES[k],b=document.createElement('button');b.className='tcard'+(k===themeKey?' on':'');
+    const ic=document.createElement('span');ic.className='ic';ic.textContent=T.ic;
+    const sw=document.createElement('div');sw.className='sw';sw.style.setProperty('--frm',T.frame);
+    [T.a,T.b,T.a,T.b].forEach(c=>{const d=document.createElement('div');d.style.background=c;sw.appendChild(d)});
+    const nm=document.createElement('span');nm.textContent=T.name;
+    b.append(ic,sw,nm);
+    b.onclick=()=>{applyTheme(k);$('themep').classList.remove('on')};
+    box.appendChild(b);
+  });
+}
+document.querySelectorAll('[data-themes]').forEach(b=>b.onclick=()=>{renderThemes();$('themep').classList.add('on')});
+applyTheme(themeKey);
 </script>
 </body>
 </html>
