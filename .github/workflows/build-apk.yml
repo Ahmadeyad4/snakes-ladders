@@ -16,6 +16,19 @@ jobs:
       - name: Build debug APK
         run: |
           cd apk
+          mkdir -p www
+          echo '<!DOCTYPE html><html><body>loading...</body></html>' > www/index.html
+          cat > capacitor.config.json <<'EOF'
+          {
+            "appId": "com.snakesladders.online",
+            "appName": "Snakes Ladders",
+            "webDir": "www",
+            "server": {
+              "url": "https://snakes-ladders-mwqy.onrender.com",
+              "cleartext": false
+            }
+          }
+          EOF
           npm install
           npx cap add android
           npx cap sync android
