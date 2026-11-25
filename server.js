@@ -20,20 +20,81 @@ const users = {};            // token -> { id, name, friends:[id], requests:[id]
 const byId = new Map();      // id -> user
 const online = new Map();    // id -> Set(ws)
 
-try {
-  const d = JSON.parse(fs.readFileSync(DATA_FILE, 'utf8'));
-  Object.assign(users, d.users || {});
-} catch (e) {}
-for (const t in users) byId.set(users[t].id, users[t]);
+// ---------- التخزين الدائم ----------
+// إذا ضبطت UPSTASH_REDIS_REST_URL و UPSTASH_REDIS_REST_TOKEN تُحفظ الحسابات والأصدقاء بقاعدة Upstash (تبقى بعد كل تحديث).
+// بدونهما تُحفظ بملف محلي، وهذا الملف يُمسح على Render المجاني عند كل نشر أو إعادة تشغيل.
+const REDIS_URL = (process.env.UPSTASH_REDIS_REST_URL || '').replace(/\/+$/, '');
+const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
+const REDIS_KEY = 'snakes-ladders:data';
+const useRedis = !!(REDIS_URL && REDIS_TOKEN);
+const sleepMs = ms => new Promise(r => setTimeout(r, ms));
 
-let saveTimer = null;
-function saveData() {
-  clearTimeout(saveTimer);
-  saveTimer = setTimeout(() => {
-    const tmp = DATA_FILE + '.tmp';
-    fs.writeFile(tmp, JSON.stringify({ users }), err => { if (!err) fs.rename(tmp, DATA_FILE, () => {}); });
-  }, 800);
+async function redisCmd(args) {
+  const r = await fetch(REDIS_URL, {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + REDIS_TOKEN, 'Content-Type': 'application/json' },
+    body: JSON.stringify(args),
+  });
+  if (!r.ok) throw new Error('redis http ' + r.status);
+  const j = await r.json();
+  if (j.error) throw new Error(j.error);
+  return j.result;
 }
+function loadFromFile() {
+  try { return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch (e) { return null; }
+}
+async function loadData() {
+  let d = null;
+  if (useRedis) {
+    for (let i = 0; i < 5; i++) {
+      try { const v = await redisCmd(['GET', REDIS_KEY]); d = v ? JSON.parse(v) : null; break; }
+      catch (e) {
+        console.error('Redis load failed:', e.message);
+        // لا نبدأ بحسابات فارغة حتى لا نمسح البيانات المحفوظة
+        if (i === 4) { console.error('Giving up, exiting so the host restarts us'); process.exit(1); }
+        await sleepMs(1500);
+      }
+    }
+    if (!d) d = loadFromFile(); // أول تشغيل: انقل ما في الملف إن وُجد
+  } else d = loadFromFile();
+  Object.assign(users, (d && d.users) || {});
+  for (const t in users) byId.set(users[t].id, users[t]);
+  console.log('Storage:', useRedis ? 'Upstash Redis' : 'local file', '| users:', Object.keys(users).length);
+}
+
+let saveTimer = null, saving = false, pending = false, again = false;
+function saveData() {
+  pending = true;
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushData, 800);
+}
+async function flushData() {
+  clearTimeout(saveTimer);
+  if (saving) { again = true; return; }
+  saving = true; pending = false; again = false;
+  const payload = JSON.stringify({ users });
+  try {
+    if (useRedis) await redisCmd(['SET', REDIS_KEY, payload]);
+    else {
+      await fs.promises.writeFile(DATA_FILE + '.tmp', payload);
+      await fs.promises.rename(DATA_FILE + '.tmp', DATA_FILE);
+    }
+  } catch (e) {
+    console.error('Save failed:', e.message);
+    pending = true;
+    saveTimer = setTimeout(flushData, 5000);
+  }
+  saving = false;
+  if (again) { again = false; saveData(); }
+}
+// عند إيقاف السيرفر (نشر جديد) نحفظ آخر تغييرات قبل الإغلاق
+process.on('SIGTERM', async () => {
+  clearTimeout(saveTimer);
+  while (saving) await sleepMs(50);
+  if (pending) await flushData();
+  process.exit(0);
+});
+
 function newId() {
   for (;;) {
     const id = String(100000 + Math.floor(Math.random() * 900000));
@@ -477,4 +538,4 @@ setInterval(() => {
   }
 }, 60 * 1000);
 
-server.listen(PORT, () => console.log('Snakes & Ladders server on port ' + PORT));
+loadData().then(() => server.listen(PORT, () => console.log('Snakes & Ladders server on port ' + PORT)));
