@@ -106,6 +106,32 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-o
 @keyframes shake{0%{transform:rotate(0)}25%{transform:rotate(-14deg) translateY(-3px)}50%{transform:rotate(12deg)}75%{transform:rotate(-10deg) translateY(-2px)}100%{transform:rotate(0)}}
 #dice.rolling{animation:shake .22s linear infinite}
 #mute{font-size:18px}
+body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70%),var(--ink)}
+.logo{text-align:center}
+.logo .em{font-size:44px;letter-spacing:6px}
+.logo h1{margin:2px 0 0;font-size:46px;text-shadow:0 4px 0 #0006}
+.me{display:flex;gap:8px;align-items:center}
+.me input{flex:1;text-align:center;font-weight:700}
+.idpill{background:var(--panel);border-radius:12px;padding:12px;white-space:nowrap;font-size:14px;color:var(--muted)}
+.idpill b{color:var(--gold);letter-spacing:1px;direction:ltr;display:inline-block}
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.tile{position:relative;border-radius:24px;aspect-ratio:1/1;display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:10px;font-size:19px;font-weight:800;color:#fff;box-shadow:0 7px 0 rgba(0,0,0,.28);transition:transform .08s,box-shadow .08s}
+.tile:active{transform:translateY(5px);box-shadow:0 2px 0 rgba(0,0,0,.28)}
+.tile .ic{font-size:46px;line-height:1}
+.tile.t1{background:linear-gradient(145deg,#ff8a5c,#ff4d6d)}
+.tile.t2{background:linear-gradient(145deg,#3fe0b0,#14a085)}
+.tile.t3{background:linear-gradient(145deg,#ffd75e,#ff9f1c);color:#3a2600}
+.tile.t4{background:linear-gradient(145deg,#80a8ff,#5a5cff)}
+.tile i{position:absolute;top:10px;inset-inline-start:10px;background:#fff;color:#c02040;border-radius:999px;min-width:26px;height:26px;
+  padding:0 7px;margin:0;font-style:normal;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.tile i:empty{display:none}
+.lobtitle{font-size:28px;font-weight:800}
+.lobsub{color:var(--muted);min-height:1.4em;text-align:center}
+.btn.big{font-size:18px;padding:16px}
+#lobby .btn,.card>.btn{width:100%}
+.idbox{display:flex;align-items:center;gap:10px;color:var(--muted)}
+.idbox b{color:var(--gold);font-size:28px;letter-spacing:3px;direction:ltr;flex:1;text-align:center}
 @media (prefers-reduced-motion:reduce){.tok{transition:none}.bubble{animation:none}}
 </style>
 </head>
@@ -113,31 +139,25 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-o
 <div id="screens">
 
   <section id="home" class="screen on">
-    <h1>حية ودرج<small>العب أونلاين مع أصدقائك</small></h1>
-    <input id="nameIn" maxlength="14" placeholder="اسمك" autocomplete="off">
-    <div id="myid">رقمك: <b id="myIdVal">------</b><button class="btn alt mini" id="copyId">نسخ</button></div>
-    <button class="btn alt" id="friendsBtn">👥 الأصدقاء<span id="badge"></span></button>
-    <div class="row">
-      <button class="btn" data-create="4">غرفة لـ 4</button>
-      <button class="btn" data-create="6">غرفة لـ 6</button>
+    <div class="logo"><div class="em">🐍🪜</div><h1>حية ودرج</h1></div>
+    <div class="me">
+      <input id="nameIn" maxlength="14" placeholder="اكتب اسمك" autocomplete="off">
+      <button class="idpill" id="copyId" aria-label="نسخ رقمك">رقمك <b id="myIdVal">------</b> 📋</button>
     </div>
-    <div class="row">
-      <button class="btn alt" data-bots="1">🤖 ضد الجهاز</button>
-      <button class="btn alt" data-bots="3">🤖 ضد 3 أجهزة</button>
-    </div>
-    <div class="sep">أو ادخل بكود الغرفة</div>
-    <div class="row">
-      <input id="codeIn" maxlength="4" placeholder="CODE" autocomplete="off">
-      <button class="btn alt" id="joinBtn">انضم</button>
+    <div class="tiles">
+      <button class="tile t1" id="tInvite"><span class="ic">📨</span>دعوة صديق<i id="onlineN"></i></button>
+      <button class="tile t2" id="tAdd"><span class="ic">➕</span>إضافة صديق<i id="badge"></i></button>
+      <button class="tile t3" id="tRandom"><span class="ic">🎲</span>لعب عشوائي</button>
+      <button class="tile t4" id="tBot"><span class="ic">🤖</span>ضد الجهاز</button>
     </div>
   </section>
 
   <section id="lobby" class="screen">
-    <div>كود الغرفة، أرسله لأصدقائك</div>
-    <div class="code" id="lobbyCode"></div>
+    <div class="lobtitle" id="lobTitle">الغرفة</div>
+    <div class="lobsub" id="lobSub"></div>
     <div class="slots" id="slots"></div>
-    <button class="btn alt" id="inviteBtn">➕ دعوة صديق</button>
-    <button class="btn" id="startBtn">ابدأ اللعب</button>
+    <button class="btn alt" id="inviteBtn">📨 دعوة صديق</button>
+    <button class="btn big" id="startBtn">ابدأ اللعب</button>
     <button class="btn alt" data-leave>خروج</button>
   </section>
 
@@ -164,11 +184,26 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-o
     <button class="btn" id="chatSend">إرسال</button>
   </div>
 </div>
-<div class="modal" id="fp"><div class="card">
-  <h3>الأصدقاء</h3>
+<div class="modal" id="addp"><div class="card">
+  <h3>➕ إضافة صديق</h3>
+  <div class="idbox">رقمك<b id="myIdBig">------</b><button class="btn alt mini" id="copyId2">نسخ</button></div>
+  <div class="sub">اكتب رقم صديقك لإرسال طلب صداقة</div>
   <div class="row"><input id="fid" inputmode="numeric" maxlength="6" placeholder="رقم صديقك" autocomplete="off"><button class="btn" id="fadd">إضافة</button></div>
   <div id="freqs"></div><div id="flist"></div>
-  <button class="btn alt" id="fclose">إغلاق</button>
+  <button class="btn alt" data-close>إغلاق</button>
+</div></div>
+<div class="modal" id="pick"><div class="card">
+  <h3>📨 اختر صديقاً للدعوة</h3>
+  <div id="plist"></div>
+  <button class="btn alt" id="pickAdd">➕ إضافة صديق</button>
+  <button class="btn alt" data-close>إغلاق</button>
+</div></div>
+<div class="modal" id="botp"><div class="card">
+  <h3>🤖 العب ضد الجهاز</h3>
+  <button class="btn" data-bots="1">ضد جهاز واحد</button>
+  <button class="btn" data-bots="3">ضد 3 أجهزة</button>
+  <button class="btn" data-bots="5">ضد 5 أجهزة</button>
+  <button class="btn alt" data-close>إغلاق</button>
 </div></div>
 <div class="modal" id="inv"><div class="card"><h3 id="invText"></h3><div class="row"><button class="btn" id="invYes">قبول</button><button class="btn alt" id="invNo">رفض</button></div></div></div>
 <div id="toast"></div>
@@ -295,7 +330,7 @@ function xy(n){const r=Math.floor((n-1)/10);let c=(n-1)%10;if(r%2)c=9-c;return{x
 })();
 
 // ---------- الحالة ----------
-let social=null,pendingInvite=null,winShown=false;
+let social=null,pendingInvite=null,winShown=false,inviteQueue=[];
 let ws,room=null,disp=[],animating=false,queue=Promise.resolve(),wantRoom=null,retry=null;
 
 function connect(){
@@ -320,7 +355,11 @@ async function handle(m){
     room=m;wantRoom=m.code;
     disp=m.players.map(p=>p.pos);
     if(m.state==='play'&&m.turn===m.you&&!wasMine&&!animating)sfx.turn();
-    if(m.state==='lobby')$('win').classList.remove('on');
+    m._dl=m.startIn!=null?Date.now()+m.startIn:null;
+    if(m.state==='lobby'){
+      $('win').classList.remove('on');
+      if(inviteQueue.length){inviteQueue.forEach(id=>tx({t:'invite',id}));inviteQueue=[]}
+    }
     render();
   }else if(m.t==='move'){
     animating=true;render();
@@ -348,8 +387,11 @@ async function handle(m){
     $('myIdVal').textContent=m.me.id;
     if(!$('nameIn').value.trim())$('nameIn').value=m.me.name;
     $('badge').textContent=m.requests.length||'';
+    $('onlineN').textContent=m.friends.filter(f=>f.online).length||'';
+    $('myIdBig').textContent=m.me.id;
     if(m.requests.length>prev){toast('📩 وصلك طلب صداقة جديد');sfx.ding()}
-    if($('fp').classList.contains('on'))renderFriends();
+    if($('addp').classList.contains('on'))renderAdd();
+    if($('pick').classList.contains('on'))renderPick();
   }else if(m.t==='invite'){
     pendingInvite=m;sfx.ding();
     $('invText').textContent=m.from.name+' يدعوك للعب (غرفة '+m.max+' لاعبين)';
@@ -382,21 +424,34 @@ function placeToks(){
     t.style.left=(n?pt.x+ox:3+i*5)+'%';t.style.top=(n?pt.y+oy:97)+'%';
   });
 }
+function updateSub(){
+  if(!room||room.state!=='lobby')return;
+  const s=$('lobSub');
+  if(room.pub){
+    if(room.players.length<2)s.textContent='🔍 جاري البحث عن لاعبين...';
+    else if(room._dl){s.textContent='🎮 تبدأ اللعبة خلال '+Math.max(0,Math.ceil((room._dl-Date.now())/1000))+' ثانية'}
+    else s.textContent='...';
+  }else s.textContent='ادعُ أصدقاءك ثم ابدأ (حتى 6 لاعبين)';
+}
+setInterval(updateSub,500);
 function render(){
   if(!room)return;
   if(room.state==='lobby'){
-    show('lobby');$('lobbyCode').textContent=room.code;
+    show('lobby');
+    $('lobTitle').textContent=room.pub?'🎲 لعب عشوائي':'🎉 غرفتك';
     const s=$('slots');s.innerHTML='';
     for(let i=0;i<room.max;i++){
       const p=room.players[i],d=document.createElement('div');d.className='slot'+(p?'':' empty');
       if(p){const c=document.createElement('span');c.className='dot';c.style.background=p.color;d.append(c,
-        document.createTextNode(p.name+(i===room.host?' 👑':'')+(i===room.you?' (أنت)':'')))}
+        document.createTextNode(p.name+(i===room.host&&!room.pub?' 👑':'')+(i===room.you?' (أنت)':'')))}
       else d.textContent='بانتظار لاعب...';
       s.appendChild(d);
     }
     const host=room.host===room.you;
-    $('startBtn').style.display=host?'':'none';
+    $('inviteBtn').style.display=room.pub?'none':'';
+    $('startBtn').style.display=(host&&!room.pub)?'':'none';
     $('startBtn').disabled=room.players.length<2;
+    updateSub();
     return;
   }
   show('game');$('gcode').textContent='الغرفة '+room.code;
@@ -435,6 +490,7 @@ function bubble(i,e){
 }
 
 // ---------- الأصدقاء ----------
+const sentAt={};
 function frow(f,acts){
   const d=document.createElement('div');d.className='frow';
   const dot=document.createElement('span');dot.className='dot';
@@ -442,53 +498,77 @@ function frow(f,acts){
   const nm=document.createElement('div');nm.className='nm';nm.textContent=f.name;
   const id=document.createElement('small');id.textContent=f.id;nm.appendChild(id);
   d.append(dot,nm);
-  acts.forEach(a=>{const b=document.createElement('button');b.className='btn alt mini';b.textContent=a[0];
-    b.onclick=()=>{if(a[1]==='friend_remove'&&!confirm('حذف '+f.name+' من الأصدقاء؟'))return;tx({t:a[1],id:f.id})};d.appendChild(b)});
+  acts.forEach(a=>{const b=document.createElement('button');b.className='btn mini'+(a.primary?'':' alt');
+    b.textContent=a.label;b.disabled=!!a.dis;b.onclick=a.fn;d.appendChild(b)});
   return d;
 }
-function renderFriends(){
+function heading(txt){const h=document.createElement('div');h.className='sub';h.textContent=txt;return h}
+function renderAdd(){
   if(!social)return;
+  $('myIdBig').textContent=social.me.id;
   const fr=$('freqs'),fl=$('flist');fr.innerHTML='';fl.innerHTML='';
-  const canInvite=room&&room.state==='lobby'&&room.players.length<room.max;
   if(social.requests.length){
-    const h=document.createElement('div');h.className='sub';h.textContent='طلبات صداقة';fr.appendChild(h);
-    social.requests.forEach(r=>fr.appendChild(frow(r,[['قبول','friend_accept'],['رفض','friend_decline']])));
+    fr.appendChild(heading('طلبات صداقة'));
+    social.requests.forEach(r=>fr.appendChild(frow(r,[
+      {label:'قبول',primary:1,fn:()=>tx({t:'friend_accept',id:r.id})},
+      {label:'رفض',fn:()=>tx({t:'friend_decline',id:r.id})}])));
   }
-  const h2=document.createElement('div');h2.className='sub';h2.textContent='أصدقائي ('+social.friends.length+')';fl.appendChild(h2);
-  if(!social.friends.length){const e=document.createElement('div');e.className='empty-note';
-    e.textContent='ما عندك أصدقاء بعد. أرسل رقمك لصديقك أو اكتب رقمه فوق.';fl.appendChild(e)}
+  if(social.friends.length){
+    fl.appendChild(heading('أصدقائي ('+social.friends.length+')'));
+    social.friends.slice().sort((a,b)=>b.online-a.online).forEach(f=>fl.appendChild(frow(f,[
+      {label:'حذف',fn:()=>{if(confirm('حذف '+f.name+' من الأصدقاء؟'))tx({t:'friend_remove',id:f.id})}}])));
+  }
+}
+function renderPick(){
+  const pl=$('plist');pl.innerHTML='';
+  if(!social||!social.friends.length){
+    const e=document.createElement('div');e.className='empty-note';
+    e.textContent='ما عندك أصدقاء بعد. أضف صديقك برقمه أولاً.';pl.appendChild(e);return;
+  }
+  const inLobby=!!room&&room.state==='lobby';
+  const full=inLobby&&room.players.length>=room.max;
   social.friends.slice().sort((a,b)=>b.online-a.online).forEach(f=>{
-    const acts=[];if(canInvite&&f.online)acts.push(['دعوة','invite']);
-    acts.push(['حذف','friend_remove']);fl.appendChild(frow(f,acts));
+    const sent=Date.now()-(sentAt[f.id]||0)<15000;
+    pl.appendChild(frow(f,[{label:sent?'تم الإرسال ✓':(f.online?'دعوة':'غير متصل'),primary:f.online&&!sent&&!full,
+      dis:!f.online||sent||full,fn:()=>inviteFriend(f)}]));
   });
 }
-function openFriends(){renderFriends();$('fp').classList.add('on')}
-$('friendsBtn').onclick=openFriends;
-$('inviteBtn').onclick=openFriends;
-$('fclose').onclick=()=>$('fp').classList.remove('on');
+function inviteFriend(f){
+  sentAt[f.id]=Date.now();
+  setTimeout(()=>{if($('pick').classList.contains('on'))renderPick()},15100);
+  if(room&&room.state==='lobby'){tx({t:'invite',id:f.id});renderPick()}
+  else{inviteQueue=[f.id];$('pick').classList.remove('on');tx({t:'create',max:6,name:myName()})}
+}
+function openAdd(){renderAdd();$('addp').classList.add('on')}
+function openPick(){renderPick();$('pick').classList.add('on')}
+function copyId(){const v=$('myIdVal').textContent;
+  if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('تم نسخ رقمك'),()=>toast('رقمك: '+v));else toast('رقمك: '+v)}
+
+// ---------- الأزرار ----------
+$('tInvite').onclick=openPick;
+$('tAdd').onclick=openAdd;
+$('tRandom').onclick=()=>tx({t:'random',name:myName()});
+$('tBot').onclick=()=>$('botp').classList.add('on');
+$('inviteBtn').onclick=openPick;
+$('pickAdd').onclick=()=>{$('pick').classList.remove('on');openAdd()};
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.modal').classList.remove('on'));
+document.querySelectorAll('[data-bots]').forEach(b=>b.onclick=()=>{$('botp').classList.remove('on');tx({t:'create',max:6,bots:+b.dataset.bots,name:myName()})});
+$('copyId').onclick=copyId;$('copyId2').onclick=copyId;
 $('fadd').onclick=()=>{const v=$('fid').value.trim();if(!/^\d{6}$/.test(v))return toast('الرقم 6 أرقام');tx({t:'friend_add',id:v});$('fid').value=''};
-$('copyId').onclick=()=>{const v=$('myIdVal').textContent;
-  if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('تم نسخ رقمك'),()=>toast('رقمك: '+v));else toast('رقمك: '+v)};
 $('mute').textContent=muted?'🔇':'🔊';
 $('mute').onclick=()=>{muted=!muted;localStorage.setItem('sl_mute',muted?'1':'0');$('mute').textContent=muted?'🔇':'🔊';if(!muted)sfx.ding()};
 $('nameIn').onchange=()=>tx({t:'hello',name:$('nameIn').value.trim()});
 $('invNo').onclick=()=>{pendingInvite=null;$('inv').classList.remove('on')};
 $('invYes').onclick=()=>{
   const inv=pendingInvite;pendingInvite=null;$('inv').classList.remove('on');if(!inv)return;
-  $('fp').classList.remove('on');
-  tx({t:'leave'});room=null;$('log').innerHTML='';$('win').classList.remove('on');
+  document.querySelectorAll('.modal').forEach(m=>m.classList.remove('on'));
+  tx({t:'leave'});room=null;inviteQueue=[];$('log').innerHTML='';$('win').classList.remove('on');
   wantRoom=inv.code;tx({t:'join',code:inv.code,name:myName()});
 };
-
-// ---------- الأزرار ----------
-document.querySelectorAll('[data-create]').forEach(b=>b.onclick=()=>tx({t:'create',max:+b.dataset.create,name:myName()}));
-document.querySelectorAll('[data-bots]').forEach(b=>b.onclick=()=>tx({t:'create',max:4,bots:+b.dataset.bots,name:myName()}));
-$('joinBtn').onclick=()=>{const c=$('codeIn').value.trim().toUpperCase();if(c.length<4)return toast('اكتب كود من 4 أحرف');
-  wantRoom=c;tx({t:'join',code:c,name:myName()})};
 $('startBtn').onclick=()=>tx({t:'start'});
 $('rollBtn').onclick=()=>tx({t:'roll'});
 $('againBtn').onclick=()=>tx({t:'again'});
-document.querySelectorAll('[data-leave]').forEach(b=>b.onclick=()=>{tx({t:'leave'});wantRoom=null;room=null;$('log').innerHTML='';$('win').classList.remove('on');show('home')});
+document.querySelectorAll('[data-leave]').forEach(b=>b.onclick=()=>{tx({t:'leave'});wantRoom=null;room=null;inviteQueue=[];$('log').innerHTML='';$('win').classList.remove('on');show('home')});
 const em=$('emojis');EMOJIS.forEach(e=>{const b=document.createElement('button');b.textContent=e;b.onclick=()=>tx({t:'chat',emoji:e});em.appendChild(b)});
 function sendChat(){const v=$('chatIn').value.trim();if(!v)return;tx({t:'chat',text:v});$('chatIn').value=''}
 $('chatSend').onclick=sendChat;
