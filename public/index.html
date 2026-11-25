@@ -13,7 +13,7 @@
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;background:var(--ink);color:var(--text);
   font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",system-ui,sans-serif;overscroll-behavior:none}
-body{display:flex;flex-direction:column;height:100dvh;padding:env(safe-area-inset-top) 8px env(safe-area-inset-bottom)}
+body{display:flex;flex-direction:column;height:100dvh;padding:env(safe-area-inset-top) 4px env(safe-area-inset-bottom)}
 button{font:inherit;color:inherit;border:0;cursor:pointer}
 input{font:inherit;color:var(--text);background:var(--panel);border:2px solid var(--panel2);
   border-radius:12px;padding:12px 14px;outline:none;width:100%}
@@ -53,10 +53,10 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-o
 .chip.off{opacity:.45}
 .bubble{position:absolute;top:-26px;left:50%;transform:translateX(-50%);font-size:26px;animation:pop .25s ease-out}
 @keyframes pop{from{transform:translateX(-50%) scale(.2)}to{transform:translateX(-50%) scale(1)}}
-#boardWrap{width:min(calc(100vw - 16px),50dvh);aspect-ratio:1;position:relative;
-  border:6px solid var(--frame);border-radius:10px;background:var(--frame);flex:none}
-#board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(10,1fr)}
-.cell{position:relative;color:var(--num);font-size:min(2.6vw,1.6dvh);font-weight:700;padding:1px 3px;box-shadow:inset 0 0 0 .6px var(--grid)}
+#boardWrap{direction:ltr;width:min(calc(100vw - 8px),55dvh);aspect-ratio:1;position:relative;
+  border:5px solid var(--frame);border-radius:10px;background:var(--frame);flex:none}
+#board{font-size:12px;direction:ltr;position:absolute;inset:0}
+.cell{position:absolute;width:10%;height:10%;color:var(--num);font-size:1em;font-weight:700;padding:1px 3px;box-shadow:inset 0 0 0 .6px var(--grid)}
 .cell.a{background:var(--ca)} .cell.b{background:var(--cb)}
 .cell.end{background:var(--cend);color:#2a2100}
 #lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
@@ -133,6 +133,7 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
 #lobby .btn,.card>.btn{width:100%}
 .idbox{display:flex;align-items:center;gap:10px;color:var(--muted)}
 .idbox b{color:var(--gold);font-size:28px;letter-spacing:3px;direction:ltr;flex:1;text-align:center}
+  .ver{color:var(--muted);text-align:center;font-size:12px;opacity:.7}
 #fx{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
 #screens,#chat{position:relative;z-index:1}
 #fx span{position:absolute;top:-8vh;animation:fall linear infinite;opacity:.85}
@@ -145,6 +146,14 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
 .tcard .sw{display:grid;grid-template-columns:repeat(4,1fr);width:100%;height:34px;border-radius:8px;overflow:hidden;border:2px solid var(--frm,#fff4)}
 .tcard .ic{font-size:30px;line-height:1}
 #themeBtn2{font-size:18px}
+@media (min-aspect-ratio:5/4){
+  body{flex-direction:row;gap:8px}
+  #chat{height:auto;width:min(340px,30vw);align-self:stretch}
+}
+#net{position:fixed;top:0;left:0;right:0;background:#d62e4a;color:#fff;text-align:center;padding:6px;font-size:14px;z-index:30;display:none}
+#net.on{display:block}
+#log p.sys{color:var(--muted);font-style:italic}
+#winSub{color:var(--muted)}
 @media (prefers-reduced-motion:reduce){#fx{display:none}}
 @media (prefers-reduced-motion:reduce){.tok{transition:none}.bubble{animation:none}}
 </style>
@@ -166,6 +175,7 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
       <button class="tile t3" id="tRandom"><span class="ic">🎲</span>لعب عشوائي</button>
       <button class="tile t4" id="tBot"><span class="ic">🤖</span>ضد الجهاز</button>
     </div>
+    <div class="ver">الإصدار 6</div>
   </section>
 
   <section id="lobby" class="screen">
@@ -227,8 +237,9 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
   <button class="btn alt" data-close>إغلاق</button>
 </div></div>
 <div class="modal" id="inv"><div class="card"><h3 id="invText"></h3><div class="row"><button class="btn" id="invYes">قبول</button><button class="btn alt" id="invNo">رفض</button></div></div></div>
+<div id="net">⚠️ انقطع الاتصال، جاري إعادة المحاولة...</div>
 <div id="toast"></div>
-<div id="win"><div><h2 id="winText"></h2><button class="btn" id="againBtn">لعبة جديدة</button><button class="btn alt" data-leave>خروج</button></div></div>
+<div id="win"><div><h2 id="winText"></h2><div id="winSub"></div><button class="btn" id="againBtn">لعبة جديدة</button><button class="btn alt" data-leave>خروج</button></div></div>
 
 <script>
 const SNAKES={16:6,47:26,49:11,56:53,62:19,64:60,87:24,93:73,95:75,98:78};
@@ -282,9 +293,11 @@ $('nameIn').value=localStorage.getItem('sl_name')||'';
 function xy(n){const r=Math.floor((n-1)/10);let c=(n-1)%10;if(r%2)c=9-c;return{x:c*10+5,y:(9-r)*10+5}}
 (function buildBoard(){
   const b=$('board');
-  for(let vr=0;vr<10;vr++){const r=9-vr;for(let vc=0;vc<10;vc++){
-    const c=r%2?9-vc:vc,n=r*10+c+1,d=document.createElement('div');
-    d.className='cell '+((vr+vc)%2?'a':'b')+(n===100?' end':'');d.textContent=n;b.appendChild(d)}}
+  for(let n=1;n<=100;n++){
+    const p=xy(n),vc=(p.x-5)/10,vr=(p.y-5)/10,d=document.createElement('div');
+    d.className='cell '+((vr+vc)%2?'a':'b')+(n===100?' end':'');
+    d.style.left=(p.x-5)+'%';d.style.top=(p.y-5)+'%';d.textContent=n;b.appendChild(d);
+  }
 })();
 function drawArt(){
   const T=THEMES[themeKey],NS='http://www.w3.org/2000/svg',svg=$('lines');svg.innerHTML='';
@@ -360,15 +373,31 @@ let ws,room=null,disp=[],animating=false,queue=Promise.resolve(),wantRoom=null,r
 function connect(){
   const proto=location.protocol==='https:'?'wss':'ws';
   ws=new WebSocket(proto+'://'+location.host);
-  ws.onopen=()=>{ tx({t:'hello',name:$('nameIn').value.trim()}); if(wantRoom) tx({t:'join',code:wantRoom,name:myName()}); };
+  ws.onopen=()=>{ $('net').classList.remove('on'); tx({t:'hello',name:$('nameIn').value.trim()}); if(wantRoom) tx({t:'join',code:wantRoom,name:myName()}); };
   ws.onmessage=e=>{const m=JSON.parse(e.data);queue=queue.then(()=>handle(m)).catch(console.error)};
-  ws.onclose=()=>{clearTimeout(retry);retry=setTimeout(connect,1500)};
+  ws.onclose=()=>{$('net').classList.add('on');clearTimeout(retry);retry=setTimeout(connect,1500)};
 }
 function tx(o){o.token=token;if(ws&&ws.readyState===1)ws.send(JSON.stringify(o));else toast('لا يوجد اتصال، انتظر...')}
 function myName(){const n=$('nameIn').value.trim();localStorage.setItem('sl_name',n);return n||'لاعب'}
 connect();
 
+function fitBoard(){
+  const g=$('game');if(!g||!g.classList.contains('on'))return;
+  const vw=document.documentElement.clientWidth,vh=window.innerHeight,land=vw/vh>=1.25;
+  const cs=getComputedStyle(document.body),pad=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
+  const fixed=$('top').offsetHeight+$('chips').offsetHeight+$('ctrl').offsetHeight+24+pad;
+  let size;
+  if(land){size=Math.min(vw-Math.min(340,vw*.3)-24,vh-fixed)}
+  else{size=Math.min(vw-8,vh-fixed-140)}
+  size=Math.max(200,Math.floor(size));
+  const w=$('boardWrap');w.style.width=size+'px';w.style.height=size+'px';
+  $('board').style.fontSize=Math.max(8,size/10*.27)+'px';
+  $('chat').style.height=land?'':Math.max(140,Math.floor(vh-fixed-size))+'px';
+}
+window.addEventListener('resize',fitBoard);
+window.addEventListener('orientationchange',()=>setTimeout(fitBoard,200));
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
+  if(id!=='game')$('chat').style.height='';else fitBoard();
   $('chat').classList.toggle('on',id!=='home')}
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1600)}
 
@@ -420,6 +449,8 @@ async function handle(m){
     pendingInvite=m;sfx.ding();
     $('invText').textContent=m.from.name+' يدعوك للعب (غرفة '+m.max+' لاعبين)';
     $('inv').classList.add('on');
+  }else if(m.t==='sys'){
+    addSys(m.text);toast(m.text);
   }else if(m.t==='ok'){
     toast(m.msg);
   }else if(m.t==='err'){
@@ -484,19 +515,25 @@ function render(){
   room.players.forEach((p,i)=>{
     const c=document.createElement('div');c.className='chip'+(i===room.turn&&room.state==='play'?' turn':'')+(p.online?'':' off');c.id='chip'+i;
     const d=document.createElement('span');d.className='dot';d.style.background=p.color;
-    c.append(d,document.createTextNode(p.name));chips.appendChild(c);
+    c.append(d,document.createTextNode(p.name+(p.online?'':' ⚠️')));chips.appendChild(c);
   });
-  placeToks();
+  placeToks();fitBoard();
   const mine=room.state==='play'&&room.turn===room.you&&!animating;
   const rb=$('rollBtn');rb.disabled=!mine;rb.classList.toggle('wait',!mine);
   rb.textContent=room.state!=='play'?'انتهت اللعبة':mine?'ارمِ النرد 🎲':animating?'...':'دور '+room.players[room.turn].name;
   if(room.state==='done'&&!animating&&room.winner>=0){
     const w=room.players[room.winner];
-    $('winText').textContent=room.winner===room.you?'🏆 فزت!':'🏆 فاز '+w.name;
-    $('againBtn').style.display=room.host===room.you?'':'none';
+    const mineWin=room.winner===room.you;
+    $('winText').textContent=mineWin?'🏆 فزت!':'😔 خسرت، فاز '+w.name;
+    $('winSub').textContent=room.reason==='left'?(mineWin?'خصمك انسحب أو انقطع اتصاله':'انتهت اللعبة'):'';
+    $('againBtn').style.display='';
     if(!winShown){winShown=true;if(room.winner===room.you)sfx.win();else sfx.bad()}
     $('win').classList.add('on');
   }else{winShown=false;$('win').classList.remove('on')}
+}
+function addSys(text){
+  const log=$('log'),row=document.createElement('p');row.className='sys';row.textContent=text;
+  log.appendChild(row);while(log.children.length>80)log.firstChild.remove();log.scrollTop=log.scrollHeight;
 }
 function addLog(m){
   if(!room)return;
@@ -568,6 +605,7 @@ function openPick(){renderPick();$('pick').classList.add('on')}
 function copyId(){const v=$('myIdVal').textContent;
   if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('تم نسخ رقمك'),()=>toast('رقمك: '+v));else toast('رقمك: '+v)}
 
+if(window.ResizeObserver){const ro=new ResizeObserver(()=>fitBoard());[$('top'),$('chips'),$('ctrl')].forEach(e=>ro.observe(e))}
 // ---------- الأزرار ----------
 $('tInvite').onclick=openPick;
 $('tAdd').onclick=openAdd;
@@ -592,7 +630,7 @@ $('invYes').onclick=()=>{
 $('startBtn').onclick=()=>tx({t:'start'});
 $('rollBtn').onclick=()=>tx({t:'roll'});
 $('againBtn').onclick=()=>tx({t:'again'});
-document.querySelectorAll('[data-leave]').forEach(b=>b.onclick=()=>{tx({t:'leave'});wantRoom=null;room=null;inviteQueue=[];$('log').innerHTML='';$('win').classList.remove('on');show('home')});
+document.querySelectorAll('[data-leave]').forEach(b=>b.onclick=()=>{if(room&&room.state==='play'&&!confirm('الخروج يعني انسحابك من اللعبة. متأكد؟'))return;tx({t:'leave'});wantRoom=null;room=null;inviteQueue=[];$('log').innerHTML='';$('win').classList.remove('on');show('home')});
 const em=$('emojis');EMOJIS.forEach(e=>{const b=document.createElement('button');b.textContent=e;b.onclick=()=>tx({t:'chat',emoji:e});em.appendChild(b)});
 function sendChat(){const v=$('chatIn').value.trim();if(!v)return;tx({t:'chat',text:v});$('chatIn').value=''}
 $('chatSend').onclick=sendChat;
