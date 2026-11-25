@@ -1,1 +1,9 @@
-
+{
+  "appId": "com.snakesladders.online",
+  "appName": "حية ودرج",
+  "webDir": "www",
+  "server": {
+    "url": "https://CHANGE-ME.onrender.com",
+    "cleartext": false
+  }
+}
