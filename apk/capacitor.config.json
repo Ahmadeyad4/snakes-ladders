@@ -1,9 +1,10 @@
 {
-  "appId": "com.snakesladders.online",
-  "appName": "حية ودرج",
-  "webDir": "www",
-  "server": {
-    "url": "https://snakes-ladders-mwqy.onrender.com",
-    "cleartext": false
+  "name": "snakes-ladders-apk",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@capacitor/android": "^6.1.0",
+    "@capacitor/cli": "^6.1.0",
+    "@capacitor/core": "^6.1.0"
   }
 }
