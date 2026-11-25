@@ -1,1 +1,395 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>حية ودرج</title>
+<style>
+:root{
+  --ink:#141838; --panel:#222858; --panel2:#2d3470; --mint:#cdeee0; --sky:#bfe0f3;
+  --gold:#ffcf4a; --text:#f4f6ff; --muted:#9aa3d6; --bad:#ff6b81;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--ink);color:var(--text);
+  font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",system-ui,sans-serif;overscroll-behavior:none}
+body{display:flex;flex-direction:column;height:100dvh;padding:env(safe-area-inset-top) 8px env(safe-area-inset-bottom)}
+button{font:inherit;color:inherit;border:0;cursor:pointer}
+input{font:inherit;color:var(--text);background:var(--panel);border:2px solid var(--panel2);
+  border-radius:12px;padding:12px 14px;outline:none;width:100%}
+input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+.btn{background:var(--gold);color:#2a2100;font-weight:700;border-radius:14px;padding:13px 16px}
+.btn.alt{background:var(--panel2);color:var(--text)}
+.btn:disabled{opacity:.45;cursor:default}
+#screens{flex:1;min-height:0;display:flex;flex-direction:column}
+.screen{display:none;flex:1;min-height:0;flex-direction:column}
+.screen.on{display:flex}
 
+/* الرئيسية */
+#home{justify-content:center;gap:14px;max-width:420px;width:100%;margin:0 auto}
+#home h1{font-size:54px;margin:0;text-align:center;line-height:1;letter-spacing:-1px}
+#home h1 small{display:block;font-size:16px;font-weight:400;color:var(--muted);margin-top:8px;letter-spacing:0}
+.row{display:flex;gap:10px}
+.row>*{flex:1}
+.sep{color:var(--muted);text-align:center;font-size:14px}
+#codeIn{text-align:center;letter-spacing:6px;text-transform:uppercase;font-weight:700}
+
+/* الغرفة */
+#lobby{align-items:center;justify-content:center;gap:14px;max-width:420px;width:100%;margin:0 auto}
+.code{font-size:48px;font-weight:800;letter-spacing:10px;color:var(--gold);direction:ltr}
+.slots{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.slot{background:var(--panel);border-radius:12px;padding:12px;display:flex;align-items:center;gap:10px;min-height:48px}
+.slot.empty{color:var(--muted);border:2px dashed var(--panel2);background:none}
+.dot{width:16px;height:16px;border-radius:50%;flex:none;border:2px solid #fff8}
+
+/* اللعب */
+#game{align-items:center;gap:6px;padding-top:6px}
+#top{width:100%;display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--muted)}
+#top button{background:none;color:var(--muted);padding:4px 8px}
+#chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%}
+.chip{position:relative;background:var(--panel);border-radius:999px;padding:5px 12px 5px 10px;display:flex;align-items:center;gap:6px;
+  font-size:13px;border:2px solid transparent}
+.chip.turn{border-color:var(--gold);background:var(--panel2)}
+.chip.off{opacity:.45}
+.bubble{position:absolute;top:-26px;left:50%;transform:translateX(-50%);font-size:26px;animation:pop .25s ease-out}
+@keyframes pop{from{transform:translateX(-50%) scale(.2)}to{transform:translateX(-50%) scale(1)}}
+#boardWrap{width:min(calc(100vw - 16px),50dvh);aspect-ratio:1;position:relative;
+  border:6px solid var(--gold);border-radius:10px;background:var(--gold);flex:none}
+#board{position:absolute;inset:0;display:grid;grid-template-columns:repeat(10,1fr);grid-template-rows:repeat(10,1fr)}
+.cell{position:relative;color:#1b2a3a99;font-size:min(2.4vw,1.5dvh);font-weight:700;padding:1px 2px}
+.cell.a{background:var(--mint)} .cell.b{background:var(--sky)}
+.cell.end{background:var(--gold);color:#2a2100}
+#lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.tok{position:absolute;width:4.6%;height:4.6%;border-radius:50%;border:2px solid #fff;
+  transform:translate(-50%,-50%);transition:left .17s linear,top .17s linear;box-shadow:0 2px 4px #0006;z-index:3}
+.tok.me{box-shadow:0 0 0 2px var(--ink),0 0 0 4px #fff}
+#ctrl{display:flex;align-items:center;gap:12px;width:100%;justify-content:center}
+#dice{font-size:54px;line-height:1;width:76px;height:76px;border-radius:18px;background:#fff;color:#1b2a3a;
+  display:flex;align-items:center;justify-content:center;flex:none}
+#rollBtn{flex:1;max-width:240px;font-size:18px;padding:16px}
+#rollBtn.wait{background:var(--panel2);color:var(--muted)}
+#toast{position:fixed;top:12%;left:50%;transform:translateX(-50%);background:#000c;padding:10px 18px;border-radius:12px;
+  font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
+#toast.on{opacity:1}
+#win{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:10}
+#win.on{display:flex}
+#win div{background:var(--panel);border-radius:20px;padding:28px;text-align:center;display:flex;flex-direction:column;gap:14px;min-width:260px}
+#win h2{margin:0;font-size:30px}
+
+/* الدردشة */
+#chat{display:none;flex-direction:column;gap:6px;height:25dvh;min-height:150px;padding:6px 0}
+#chat.on{display:flex}
+#log{flex:1;min-height:0;overflow-y:auto;background:var(--panel);border-radius:12px;padding:8px 10px;font-size:14px}
+#log p{margin:0 0 4px;overflow-wrap:anywhere}
+#log b{margin-inline-end:6px}
+#emojis{display:flex;gap:4px;justify-content:space-between}
+#emojis button{background:var(--panel);border-radius:10px;font-size:22px;padding:4px 0;flex:1}
+#emojis button:active{background:var(--panel2)}
+#chatRow{display:flex;gap:6px}
+#chatIn{padding:9px 12px}
+#chatRow .btn{padding:9px 16px}
+#myid{display:flex;align-items:center;justify-content:center;gap:8px;color:var(--muted);font-size:14px}
+#myid b{color:var(--gold);font-size:20px;letter-spacing:2px;direction:ltr}
+.mini{padding:6px 12px;font-size:14px;border-radius:10px}
+#badge{background:var(--bad);color:#fff;border-radius:999px;padding:0 8px;font-size:13px;margin-inline-start:6px}
+#badge:empty{display:none}
+.modal{position:fixed;inset:0;background:#0009;display:none;align-items:center;justify-content:center;z-index:15;padding:12px}
+.modal.on{display:flex}
+.card{background:var(--panel);border-radius:20px;padding:18px;width:min(100%,380px);max-height:85dvh;overflow-y:auto;display:flex;flex-direction:column;gap:10px}
+.card h3{margin:0;font-size:20px}
+.sub{color:var(--muted);font-size:13px;margin-top:4px}
+.frow{display:flex;align-items:center;gap:8px;background:var(--panel2);border-radius:12px;padding:8px 10px}
+.frow .nm{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.frow small{color:var(--muted);direction:ltr;display:inline-block;margin-inline-start:6px}
+.empty-note{color:var(--muted);font-size:14px;text-align:center;padding:8px}
+@media (prefers-reduced-motion:reduce){.tok{transition:none}.bubble{animation:none}}
+</style>
+</head>
+<body>
+<div id="screens">
+
+  <section id="home" class="screen on">
+    <h1>حية ودرج<small>العب أونلاين مع أصدقائك</small></h1>
+    <input id="nameIn" maxlength="14" placeholder="اسمك" autocomplete="off">
+    <div id="myid">رقمك: <b id="myIdVal">------</b><button class="btn alt mini" id="copyId">نسخ</button></div>
+    <button class="btn alt" id="friendsBtn">👥 الأصدقاء<span id="badge"></span></button>
+    <div class="row">
+      <button class="btn" data-create="4">غرفة لـ 4</button>
+      <button class="btn" data-create="6">غرفة لـ 6</button>
+    </div>
+    <div class="row">
+      <button class="btn alt" data-bots="1">🤖 ضد الجهاز</button>
+      <button class="btn alt" data-bots="3">🤖 ضد 3 أجهزة</button>
+    </div>
+    <div class="sep">أو ادخل بكود الغرفة</div>
+    <div class="row">
+      <input id="codeIn" maxlength="4" placeholder="CODE" autocomplete="off">
+      <button class="btn alt" id="joinBtn">انضم</button>
+    </div>
+  </section>
+
+  <section id="lobby" class="screen">
+    <div>كود الغرفة، أرسله لأصدقائك</div>
+    <div class="code" id="lobbyCode"></div>
+    <div class="slots" id="slots"></div>
+    <button class="btn alt" id="inviteBtn">➕ دعوة صديق</button>
+    <button class="btn" id="startBtn">ابدأ اللعب</button>
+    <button class="btn alt" data-leave>خروج</button>
+  </section>
+
+  <section id="game" class="screen">
+    <div id="top"><span id="gcode"></span><button data-leave>خروج</button></div>
+    <div id="chips"></div>
+    <div id="boardWrap">
+      <div id="board"></div>
+      <svg id="lines" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
+      <div id="toks"></div>
+    </div>
+    <div id="ctrl">
+      <div id="dice">⚀</div>
+      <button class="btn" id="rollBtn">ارمِ النرد</button>
+    </div>
+  </section>
+</div>
+
+<div id="chat">
+  <div id="log"></div>
+  <div id="emojis"></div>
+  <div id="chatRow">
+    <input id="chatIn" maxlength="200" placeholder="اكتب رسالة" autocomplete="off">
+    <button class="btn" id="chatSend">إرسال</button>
+  </div>
+</div>
+<div class="modal" id="fp"><div class="card">
+  <h3>الأصدقاء</h3>
+  <div class="row"><input id="fid" inputmode="numeric" maxlength="6" placeholder="رقم صديقك" autocomplete="off"><button class="btn" id="fadd">إضافة</button></div>
+  <div id="freqs"></div><div id="flist"></div>
+  <button class="btn alt" id="fclose">إغلاق</button>
+</div></div>
+<div class="modal" id="inv"><div class="card"><h3 id="invText"></h3><div class="row"><button class="btn" id="invYes">قبول</button><button class="btn alt" id="invNo">رفض</button></div></div></div>
+<div id="toast"></div>
+<div id="win"><div><h2 id="winText"></h2><button class="btn" id="againBtn">لعبة جديدة</button><button class="btn alt" data-leave>خروج</button></div></div>
+
+<script>
+const SNAKES={16:6,47:26,49:11,56:53,62:19,64:60,87:24,93:73,95:75,98:78};
+const LADDERS={1:38,4:14,9:31,21:42,28:84,36:44,51:67,71:91,80:100};
+const EMOJIS=['😂','😡','👏','😭','🔥','👍','😎','🙈'];
+const FACES=['⚀','⚁','⚂','⚃','⚄','⚅'];
+const $=id=>document.getElementById(id);
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+
+let token=localStorage.getItem('sl_token');
+if(!token){token=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2)+Date.now()).replace(/-/g,'');localStorage.setItem('sl_token',token)}
+$('nameIn').value=localStorage.getItem('sl_name')||'';
+
+// ---------- اللوحة ----------
+function xy(n){const r=Math.floor((n-1)/10);let c=(n-1)%10;if(r%2)c=9-c;return{x:c*10+5,y:(9-r)*10+5}}
+(function buildBoard(){
+  const b=$('board');
+  for(let vr=0;vr<10;vr++){const r=9-vr;for(let vc=0;vc<10;vc++){
+    const c=r%2?9-vc:vc,n=r*10+c+1,d=document.createElement('div');
+    d.className='cell '+((r+c)%2?'a':'b')+(n===100?' end':'');d.textContent=n;b.appendChild(d)}}
+  const NS='http://www.w3.org/2000/svg',svg=$('lines');
+  const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);svg.appendChild(e);return e};
+  for(const s in LADDERS){
+    const a=xy(+s),z=xy(LADDERS[s]),dx=z.x-a.x,dy=z.y-a.y,len=Math.hypot(dx,dy),ux=dx/len,uy=dy/len,px=-uy*1.3,py=ux*1.3;
+    el('line',{x1:a.x+px,y1:a.y+py,x2:z.x+px,y2:z.y+py,stroke:'#8b5a2b','stroke-width':.9,'stroke-linecap':'round'});
+    el('line',{x1:a.x-px,y1:a.y-py,x2:z.x-px,y2:z.y-py,stroke:'#8b5a2b','stroke-width':.9,'stroke-linecap':'round'});
+    for(let t=3;t<len-1;t+=4){const cx=a.x+ux*t,cy=a.y+uy*t;
+      el('line',{x1:cx+px,y1:cy+py,x2:cx-px,y2:cy-py,stroke:'#b9814a','stroke-width':.7,'stroke-linecap':'round'})}
+  }
+  const cols=['#e63946','#2a9d8f','#7b2cbf','#f77f00','#3a86ff'];let k=0;
+  for(const s in SNAKES){
+    const a=xy(+s),z=xy(SNAKES[s]),mx=(a.x+z.x)/2,my=(a.y+z.y)/2,dx=z.x-a.x,dy=z.y-a.y,len=Math.hypot(dx,dy)||1;
+    const sg=k%2?1:-1,cx=mx+(-dy/len)*9*sg,cy=my+(dx/len)*9*sg,col=cols[k++%cols.length];
+    el('path',{d:`M${a.x} ${a.y} Q${cx} ${cy} ${z.x} ${z.y}`,fill:'none',stroke:col,'stroke-width':2.1,'stroke-linecap':'round',opacity:.9});
+    el('circle',{cx:a.x,cy:a.y,r:2.3,fill:col});
+    el('circle',{cx:a.x-.8,cy:a.y-.6,r:.5,fill:'#fff'});el('circle',{cx:a.x+.8,cy:a.y-.6,r:.5,fill:'#fff'});
+  }
+})();
+
+// ---------- الحالة ----------
+let social=null,pendingInvite=null;
+let ws,room=null,disp=[],animating=false,queue=Promise.resolve(),wantRoom=null,retry=null;
+
+function connect(){
+  const proto=location.protocol==='https:'?'wss':'ws';
+  ws=new WebSocket(proto+'://'+location.host);
+  ws.onopen=()=>{ tx({t:'hello',name:$('nameIn').value.trim()}); if(wantRoom) tx({t:'join',code:wantRoom,name:myName()}); };
+  ws.onmessage=e=>{const m=JSON.parse(e.data);queue=queue.then(()=>handle(m)).catch(console.error)};
+  ws.onclose=()=>{clearTimeout(retry);retry=setTimeout(connect,1500)};
+}
+function tx(o){o.token=token;if(ws&&ws.readyState===1)ws.send(JSON.stringify(o));else toast('لا يوجد اتصال، انتظر...')}
+function myName(){const n=$('nameIn').value.trim();localStorage.setItem('sl_name',n);return n||'لاعب'}
+connect();
+
+function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
+  $('chat').classList.toggle('on',id!=='home')}
+function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1600)}
+
+// ---------- معالجة الرسائل ----------
+async function handle(m){
+  if(m.t==='room'){
+    room=m;wantRoom=m.code;
+    disp=m.players.map(p=>p.pos);
+    if(m.state==='lobby')$('win').classList.remove('on');
+    render();
+  }else if(m.t==='move'){
+    animating=true;render();
+    $('dice').style.opacity=.6;
+    for(let k=0;k<6;k++){$('dice').textContent=FACES[Math.floor(Math.random()*6)];await sleep(70)}
+    $('dice').style.opacity=1;$('dice').textContent=FACES[m.dice-1];
+    const i=m.i;
+    if(m.land===m.from){toast('تحتاج الرقم المضبوط للوصول إلى 100')}
+    else{for(let s=m.from+1;s<=m.land;s++){disp[i]=s;placeToks();await sleep(170)}}
+    if(m.to!==m.land){
+      toast(m.to<m.land?'🐍 لدغتك حية!':'🪜 صعدت درج!');await sleep(550);disp[i]=m.to;placeToks();await sleep(450);
+    }
+    animating=false;render();
+  }else if(m.t==='chat'){
+    addLog(m);
+    if(m.emoji)bubble(m.i,m.text);
+  }else if(m.t==='social'){
+    const prev=social?social.requests.length:0;
+    social=m;
+    $('myIdVal').textContent=m.me.id;
+    if(!$('nameIn').value.trim())$('nameIn').value=m.me.name;
+    $('badge').textContent=m.requests.length||'';
+    if(m.requests.length>prev)toast('📩 وصلك طلب صداقة جديد');
+    if($('fp').classList.contains('on'))renderFriends();
+  }else if(m.t==='invite'){
+    pendingInvite=m;
+    $('invText').textContent=m.from.name+' يدعوك للعب (غرفة '+m.max+' لاعبين)';
+    $('inv').classList.add('on');
+  }else if(m.t==='ok'){
+    toast(m.msg);
+  }else if(m.t==='err'){
+    toast(m.msg);
+    if(m.fatal){wantRoom=null;room=null;show('home')}
+  }
+}
+
+// ---------- الرسم ----------
+function placeToks(){
+  if(!room)return;
+  const box=$('toks');
+  while(box.children.length>room.players.length)box.lastChild.remove();
+  room.players.forEach((p,i)=>{
+    let t=box.children[i];
+    if(!t){t=document.createElement('div');t.className='tok';box.appendChild(t)}
+    const n=disp[i]||0,pt=n?xy(n):{x:-6,y:105+i*0};
+    const ox=((i%3)-1)*2.4,oy=(Math.floor(i/3)-.5)*2.6;
+    t.style.background=p.color;t.classList.toggle('me',i===room.you);
+    t.style.left=(n?pt.x+ox:3+i*5)+'%';t.style.top=(n?pt.y+oy:97)+'%';
+  });
+}
+function render(){
+  if(!room)return;
+  if(room.state==='lobby'){
+    show('lobby');$('lobbyCode').textContent=room.code;
+    const s=$('slots');s.innerHTML='';
+    for(let i=0;i<room.max;i++){
+      const p=room.players[i],d=document.createElement('div');d.className='slot'+(p?'':' empty');
+      if(p){const c=document.createElement('span');c.className='dot';c.style.background=p.color;d.append(c,
+        document.createTextNode(p.name+(i===room.host?' 👑':'')+(i===room.you?' (أنت)':'')))}
+      else d.textContent='بانتظار لاعب...';
+      s.appendChild(d);
+    }
+    const host=room.host===room.you;
+    $('startBtn').style.display=host?'':'none';
+    $('startBtn').disabled=room.players.length<2;
+    return;
+  }
+  show('game');$('gcode').textContent='الغرفة '+room.code;
+  const chips=$('chips');
+  chips.innerHTML='';
+  room.players.forEach((p,i)=>{
+    const c=document.createElement('div');c.className='chip'+(i===room.turn&&room.state==='play'?' turn':'')+(p.online?'':' off');c.id='chip'+i;
+    const d=document.createElement('span');d.className='dot';d.style.background=p.color;
+    c.append(d,document.createTextNode(p.name));chips.appendChild(c);
+  });
+  placeToks();
+  const mine=room.state==='play'&&room.turn===room.you&&!animating;
+  const rb=$('rollBtn');rb.disabled=!mine;rb.classList.toggle('wait',!mine);
+  rb.textContent=room.state!=='play'?'انتهت اللعبة':mine?'ارمِ النرد 🎲':animating?'...':'دور '+room.players[room.turn].name;
+  if(room.state==='done'&&!animating&&room.winner>=0){
+    const w=room.players[room.winner];
+    $('winText').textContent=room.winner===room.you?'🏆 فزت!':'🏆 فاز '+w.name;
+    $('againBtn').style.display=room.host===room.you?'':'none';
+    $('win').classList.add('on');
+  }else $('win').classList.remove('on');
+}
+function addLog(m){
+  if(!room)return;
+  const p=room.players[m.i],log=$('log'),row=document.createElement('p');
+  const b=document.createElement('b');b.textContent=(p?p.name:'؟')+':';if(p)b.style.color=p.color;
+  row.append(b,document.createTextNode(m.text));log.appendChild(row);
+  while(log.children.length>80)log.firstChild.remove();
+  log.scrollTop=log.scrollHeight;
+}
+function bubble(i,e){
+  const c=$('chip'+i);if(!c)return;
+  const old=c.querySelector('.bubble');if(old)old.remove();
+  const b=document.createElement('span');b.className='bubble';b.textContent=e;c.appendChild(b);
+  setTimeout(()=>b.remove(),2500);
+}
+
+// ---------- الأصدقاء ----------
+function frow(f,acts){
+  const d=document.createElement('div');d.className='frow';
+  const dot=document.createElement('span');dot.className='dot';
+  dot.style.background=f.online===undefined?'#7d86c9':(f.online?'#3ddc97':'#555a80');
+  const nm=document.createElement('div');nm.className='nm';nm.textContent=f.name;
+  const id=document.createElement('small');id.textContent=f.id;nm.appendChild(id);
+  d.append(dot,nm);
+  acts.forEach(a=>{const b=document.createElement('button');b.className='btn alt mini';b.textContent=a[0];
+    b.onclick=()=>{if(a[1]==='friend_remove'&&!confirm('حذف '+f.name+' من الأصدقاء؟'))return;tx({t:a[1],id:f.id})};d.appendChild(b)});
+  return d;
+}
+function renderFriends(){
+  if(!social)return;
+  const fr=$('freqs'),fl=$('flist');fr.innerHTML='';fl.innerHTML='';
+  const canInvite=room&&room.state==='lobby'&&room.players.length<room.max;
+  if(social.requests.length){
+    const h=document.createElement('div');h.className='sub';h.textContent='طلبات صداقة';fr.appendChild(h);
+    social.requests.forEach(r=>fr.appendChild(frow(r,[['قبول','friend_accept'],['رفض','friend_decline']])));
+  }
+  const h2=document.createElement('div');h2.className='sub';h2.textContent='أصدقائي ('+social.friends.length+')';fl.appendChild(h2);
+  if(!social.friends.length){const e=document.createElement('div');e.className='empty-note';
+    e.textContent='ما عندك أصدقاء بعد. أرسل رقمك لصديقك أو اكتب رقمه فوق.';fl.appendChild(e)}
+  social.friends.slice().sort((a,b)=>b.online-a.online).forEach(f=>{
+    const acts=[];if(canInvite&&f.online)acts.push(['دعوة','invite']);
+    acts.push(['حذف','friend_remove']);fl.appendChild(frow(f,acts));
+  });
+}
+function openFriends(){renderFriends();$('fp').classList.add('on')}
+$('friendsBtn').onclick=openFriends;
+$('inviteBtn').onclick=openFriends;
+$('fclose').onclick=()=>$('fp').classList.remove('on');
+$('fadd').onclick=()=>{const v=$('fid').value.trim();if(!/^\d{6}$/.test(v))return toast('الرقم 6 أرقام');tx({t:'friend_add',id:v});$('fid').value=''};
+$('copyId').onclick=()=>{const v=$('myIdVal').textContent;
+  if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('تم نسخ رقمك'),()=>toast('رقمك: '+v));else toast('رقمك: '+v)};
+$('nameIn').onchange=()=>tx({t:'hello',name:$('nameIn').value.trim()});
+$('invNo').onclick=()=>{pendingInvite=null;$('inv').classList.remove('on')};
+$('invYes').onclick=()=>{
+  const inv=pendingInvite;pendingInvite=null;$('inv').classList.remove('on');if(!inv)return;
+  $('fp').classList.remove('on');
+  tx({t:'leave'});room=null;$('log').innerHTML='';$('win').classList.remove('on');
+  wantRoom=inv.code;tx({t:'join',code:inv.code,name:myName()});
+};
+
+// ---------- الأزرار ----------
+document.querySelectorAll('[data-create]').forEach(b=>b.onclick=()=>tx({t:'create',max:+b.dataset.create,name:myName()}));
+document.querySelectorAll('[data-bots]').forEach(b=>b.onclick=()=>tx({t:'create',max:4,bots:+b.dataset.bots,name:myName()}));
+$('joinBtn').onclick=()=>{const c=$('codeIn').value.trim().toUpperCase();if(c.length<4)return toast('اكتب كود من 4 أحرف');
+  wantRoom=c;tx({t:'join',code:c,name:myName()})};
+$('startBtn').onclick=()=>tx({t:'start'});
+$('rollBtn').onclick=()=>tx({t:'roll'});
+$('againBtn').onclick=()=>tx({t:'again'});
+document.querySelectorAll('[data-leave]').forEach(b=>b.onclick=()=>{tx({t:'leave'});wantRoom=null;room=null;$('log').innerHTML='';$('win').classList.remove('on');show('home')});
+const em=$('emojis');EMOJIS.forEach(e=>{const b=document.createElement('button');b.textContent=e;b.onclick=()=>tx({t:'chat',emoji:e});em.appendChild(b)});
+function sendChat(){const v=$('chatIn').value.trim();if(!v)return;tx({t:'chat',text:v});$('chatIn').value=''}
+$('chatSend').onclick=sendChat;
+$('chatIn').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat()});
+</script>
+</body>
+</html>
