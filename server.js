@@ -171,6 +171,8 @@ function sendRoom(room) {
       host: room.host,
       turn: room.turn,
       winner: room.winner,
+      pub: !!room.pub,
+      startIn: room.startAt ? Math.max(0, room.startAt - Date.now()) : null,
       players: room.players.map(q => ({ name: q.name, color: q.color, pos: q.pos, online: !!q.ws || !!q.bot })),
     });
   });
@@ -210,7 +212,7 @@ function detach(ws) {
     room.emptySince = Date.now();
     clearTimeout(room.timer);
   }
-  if (room.players.length === 0) { rooms.delete(room.code); return; }
+  if (room.players.length === 0) { clearTimeout(room.startTimer); rooms.delete(room.code); return; }
   if (room.state === 'lobby') {
     if (!room.players[room.host] || !room.players[room.host].ws) {
       const i = room.players.findIndex(p => p.ws);
@@ -219,7 +221,32 @@ function detach(ws) {
   } else if (room.state === 'play' && room.players[room.turn] === player) {
     nextTurn(room);
   }
+  if (room.state === 'lobby') checkAutoStart(room);
   sendRoom(room);
+}
+
+function startGame(room) {
+  if (!rooms.has(room.code) || room.state !== 'lobby' || room.players.length < 2) return;
+  clearTimeout(room.startTimer); room.startTimer = null; room.startAt = null;
+  room.state = 'play';
+  room.turn = 0;
+  room.winner = -1;
+  room.players.forEach(p => (p.pos = 0));
+  armTimer(room);
+  sendRoom(room);
+}
+function scheduleStart(room, ms) {
+  clearTimeout(room.startTimer);
+  room.startAt = Date.now() + ms;
+  room.startTimer = setTimeout(() => { room.startTimer = null; startGame(room); }, ms);
+}
+// غرف اللعب العشوائي تبدأ تلقائياً: 8 ثواني بعد وصول لاعبين، أو فوراً تقريباً إذا امتلأت
+function checkAutoStart(room) {
+  if (!room.pub || room.state !== 'lobby') return;
+  const n = room.players.length;
+  if (n < 2) { clearTimeout(room.startTimer); room.startTimer = null; room.startAt = null; return; }
+  if (n >= room.max) { if (!room.startAt || room.startAt - Date.now() > 1500) scheduleStart(room, 1500); }
+  else if (!room.startTimer) scheduleStart(room, 8000);
 }
 
 function armTimer(room) {
@@ -309,6 +336,23 @@ wss.on('connection', ws => {
         room.players.push(player);
         attach(ws, room, player);
       }
+      checkAutoStart(room);
+      sendRoom(room);
+    } else if (m.t === 'random') {
+      if (!token || !ws.user) return;
+      if (ws.room) detach(ws);
+      let room = null;
+      for (const r of rooms.values()) {
+        if (r.pub && r.state === 'lobby' && r.players.length < r.max && !r.players.some(p => p.token === token)) { room = r; break; }
+      }
+      if (!room) {
+        room = { code: makeCode(), max: 4, pub: true, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
+        rooms.set(room.code, room);
+      }
+      const player = { token, name: ws.user.name, color: pickColor(room), pos: 0, ws: null };
+      room.players.push(player);
+      attach(ws, room, player);
+      checkAutoStart(room);
       sendRoom(room);
     } else if (m.t === 'leave') {
       const room = ws.room, player = ws.player;
@@ -342,12 +386,7 @@ wss.on('connection', ws => {
       const room = ws.room;
       if (!room || room.state !== 'lobby' || room.players[room.host] !== ws.player) return;
       if (room.players.length < 2) return send(ws, { t: 'err', msg: 'تحتاج لاعبين اثنين على الأقل' });
-      room.state = 'play';
-      room.turn = 0;
-      room.winner = -1;
-      room.players.forEach(p => (p.pos = 0));
-      armTimer(room);
-      sendRoom(room);
+      startGame(room);
     } else if (m.t === 'roll') {
       const room = ws.room;
       if (!room || room.state !== 'play' || room.players[room.turn] !== ws.player) return;
@@ -367,6 +406,7 @@ wss.on('connection', ws => {
       room.players = room.players.filter(p => p.ws);
       room.players.forEach(p => (p.pos = 0));
       room.host = 0;
+      checkAutoStart(room);
       sendRoom(room);
     } else if (m.t === 'chat') {
       const room = ws.room;
