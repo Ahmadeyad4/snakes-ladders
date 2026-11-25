@@ -10,6 +10,7 @@ const LADDERS = { 1: 38, 4: 14, 9: 31, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 8
 const COLORS = ['#ff4d6d', '#2ec4b6', '#ffb703', '#4895ef', '#b388ff', '#ff8fab'];
 const EMOJIS = ['😂', '😡', '👏', '😭', '🔥', '👍', '😎', '🙈'];
 const TURN_MS = 25000;
+const DC_GRACE = parseInt(process.env.DC_GRACE_MS) || 40000; // مهلة انتظار اللاعب المنقطع قبل اعتباره منسحباً
 
 const rooms = new Map();
 
@@ -144,7 +145,7 @@ const server = http.createServer((req, res) => {
   if (req.url === '/' || req.url.startsWith('/?') || req.url === '/index.html') {
     fs.readFile(path.join(__dirname, 'public', 'index.html'), (err, data) => {
       if (err) { res.writeHead(500); return res.end('error'); }
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
       res.end(data);
     });
   } else if (req.url === '/health') {
@@ -172,6 +173,7 @@ function sendRoom(room) {
       turn: room.turn,
       winner: room.winner,
       pub: !!room.pub,
+      reason: room.endReason || null,
       startIn: room.startAt ? Math.max(0, room.startAt - Date.now()) : null,
       players: room.players.map(q => ({ name: q.name, color: q.color, pos: q.pos, online: !!q.ws || !!q.bot })),
     });
@@ -195,9 +197,42 @@ function cleanName(n) {
 function attach(ws, room, player) {
   if (player.ws && player.ws !== ws) { player.ws.room = null; player.ws.player = null; try { player.ws.close(); } catch (e) {} }
   player.ws = ws;
+  clearTimeout(player.dcTimer); player.dcTimer = null;
   ws.room = room;
   ws.player = player;
   room.emptySince = null;
+}
+
+// إخراج لاعب نهائياً من لعبة جارية (انسحاب أو انقطاع طويل)
+function removePlayerInGame(room, player, why) {
+  const idx = room.players.indexOf(player);
+  if (idx < 0) return;
+  clearTimeout(player.dcTimer); player.dcTimer = null;
+  const wasPlaying = room.state === 'play';
+  const wasTurn = wasPlaying && room.turn === idx;
+  if (player.ws) { player.ws.room = null; player.ws.player = null; player.ws = null; }
+  room.players.splice(idx, 1);
+  if (room.players.length === 0 || room.players.every(p => p.bot)) {
+    clearTimeout(room.timer); clearTimeout(room.startTimer); rooms.delete(room.code); return;
+  }
+  if (wasPlaying) broadcast(room, { t: 'sys', text: (why === 'dc' ? '🚪 ' + player.name + ' انقطع اتصاله وخرج من اللعبة' : '🚪 ' + player.name + ' انسحب من اللعبة') });
+  if (idx < room.turn) room.turn--;
+  if (room.turn >= room.players.length) room.turn = 0;
+  if (idx < room.host) room.host--; else if (idx === room.host) room.host = 0;
+  if (room.winner > idx) room.winner--; else if (room.winner === idx) room.winner = -1;
+  if (wasPlaying) {
+    const humans = room.players.filter(p => !p.bot);
+    if (room.players.length < 2 || humans.length < 1) {
+      room.state = 'done';
+      room.winner = humans.length ? room.players.indexOf(humans[0]) : 0;
+      room.endReason = 'left';
+      clearTimeout(room.timer);
+    } else if (wasTurn) {
+      room.turn = (room.turn + room.players.length - 1) % room.players.length;
+      nextTurn(room);
+    }
+  }
+  sendRoom(room);
 }
 
 function detach(ws) {
@@ -218,8 +253,15 @@ function detach(ws) {
       const i = room.players.findIndex(p => p.ws);
       room.host = i >= 0 ? i : 0;
     }
-  } else if (room.state === 'play' && room.players[room.turn] === player) {
-    nextTurn(room);
+  } else if (room.state === 'play') {
+    if (!room.solo) {
+      broadcast(room, { t: 'sys', text: '⚠️ ' + player.name + ' انقطع اتصاله، ننتظره ' + Math.round(DC_GRACE / 1000) + ' ثانية' });
+      clearTimeout(player.dcTimer);
+      player.dcTimer = setTimeout(() => {
+        if (!player.ws && rooms.has(room.code) && room.players.includes(player)) removePlayerInGame(room, player, 'dc');
+      }, DC_GRACE);
+    }
+    if (room.players[room.turn] === player) nextTurn(room);
   }
   if (room.state === 'lobby') checkAutoStart(room);
   sendRoom(room);
@@ -228,6 +270,7 @@ function detach(ws) {
 function startGame(room) {
   if (!rooms.has(room.code) || room.state !== 'lobby' || room.players.length < 2) return;
   clearTimeout(room.startTimer); room.startTimer = null; room.startAt = null;
+  room.endReason = null;
   room.state = 'play';
   room.turn = 0;
   room.winner = -1;
@@ -283,6 +326,7 @@ function doRoll(room) {
   if (to === 100) {
     room.state = 'done';
     room.winner = i;
+    room.endReason = 'win';
     clearTimeout(room.timer);
   } else if (dice === 6) {
     armTimer(room); // رمية إضافية
@@ -328,9 +372,15 @@ wss.on('connection', ws => {
       if (ws.room && ws.room !== room) detach(ws);
       let player = room.players.find(p => p.token === token);
       if (player) {
+        const wasOff = !player.ws;
         attach(ws, room, player);
+        if (room.state === 'play') {
+          if (wasOff && !room.solo) broadcast(room, { t: 'sys', text: '✅ ' + player.name + ' رجع للعبة' });
+          const cur = room.players[room.turn];
+          if (!cur || (!cur.ws && !cur.bot)) nextTurn(room); else armTimer(room);
+        }
       } else {
-        if (room.state !== 'lobby') return send(ws, { t: 'err', msg: 'اللعبة بدأت بالفعل', fatal: true });
+        if (room.state !== 'lobby') return send(ws, { t: 'err', msg: 'اللعبة بدأت بالفعل أو خرجت منها', fatal: true });
         if (room.players.length >= room.max) return send(ws, { t: 'err', msg: 'الغرفة ممتلئة', fatal: true });
         player = { token, name: ws.user ? ws.user.name : cleanName(m.name), color: pickColor(room), pos: 0, ws: null };
         room.players.push(player);
@@ -363,22 +413,8 @@ wss.on('connection', ws => {
         return;
       }
       if (room && player && room.state !== 'lobby') {
-        // بعد بدء اللعبة: نحذف اللاعب نهائياً لتجنب بقاء مقعد فارغ
-        const wasTurn = room.players[room.turn] === player;
-        const idx = room.players.indexOf(player);
-        player.ws = null; ws.room = null; ws.player = null;
-        room.players.splice(idx, 1);
-        if (room.players.length === 0) { rooms.delete(room.code); clearTimeout(room.timer); return; }
-        if (idx < room.turn) room.turn--;
-        if (room.turn >= room.players.length) room.turn = 0;
-        if (room.winner > idx) room.winner--;
-        else if (room.winner === idx) room.winner = -1;
-        if (room.host >= room.players.length) room.host = 0;
-        if (room.state === 'play') {
-          if (room.players.length < 2) { room.state = 'done'; room.winner = 0; clearTimeout(room.timer); }
-          else if (wasTurn) { room.turn = (room.turn + room.players.length - 1) % room.players.length; nextTurn(room); }
-        }
-        sendRoom(room);
+        ws.room = null; ws.player = null; player.ws = null;
+        removePlayerInGame(room, player, 'leave');
       } else {
         detach(ws);
       }
@@ -393,7 +429,8 @@ wss.on('connection', ws => {
       doRoll(room);
     } else if (m.t === 'again') {
       const room = ws.room;
-      if (!room || room.state !== 'done' || room.players[room.host] !== ws.player) return;
+      if (!room || room.state !== 'done' || !room.players.includes(ws.player)) return;
+      room.endReason = null;
       if (room.solo) {
         room.players.forEach(p => (p.pos = 0));
         room.state = 'play'; room.turn = 0; room.winner = -1;
