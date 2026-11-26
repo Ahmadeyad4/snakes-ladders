@@ -1,4 +1,4 @@
-// سيرفر لعبة الحية والدرج - Node.js + ws
+// سيرفر كعدة بلي (Ka'da Play) - Node.js + ws
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -28,7 +28,8 @@ const online = new Map();    // id -> Set(ws)
 // بدونهما تُحفظ بملف محلي، وهذا الملف يُمسح على Render المجاني عند كل نشر أو إعادة تشغيل.
 const REDIS_URL = (process.env.UPSTASH_REDIS_REST_URL || '').replace(/\/+$/, '');
 const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
-const REDIS_KEY = 'snakes-ladders:data';
+const REDIS_KEY = 'kadaplay:data';
+const OLD_REDIS_KEY = 'snakes-ladders:data'; // المفتاح القديم: يُقرأ مرة واحدة لنقل الحسابات
 const useRedis = !!(REDIS_URL && REDIS_TOKEN);
 const sleepMs = ms => new Promise(r => setTimeout(r, ms));
 
@@ -50,7 +51,11 @@ async function loadData() {
   let d = null;
   if (useRedis) {
     for (let i = 0; i < 5; i++) {
-      try { const v = await redisCmd(['GET', REDIS_KEY]); d = v ? JSON.parse(v) : null; break; }
+      try {
+        let v = await redisCmd(['GET', REDIS_KEY]);
+        if (!v) { v = await redisCmd(['GET', OLD_REDIS_KEY]); if (v) console.log('Migrating accounts from old Redis key'); }
+        d = v ? JSON.parse(v) : null; break;
+      }
       catch (e) {
         console.error('Redis load failed:', e.message);
         // لا نبدأ بحسابات فارغة حتى لا نمسح البيانات المحفوظة
@@ -190,7 +195,7 @@ function handleSocial(ws, m, token) {
     const now = Date.now();
     if (now - (ws.lastInvite || 0) < 2000) return true;
     ws.lastInvite = now;
-    socks.forEach(w => send(w, { t: 'invite', code: room.code, max: room.max, game: room.game || 'snakes', from: { id: u.id, name: u.name } }));
+    socks.forEach(w => send(w, { t: 'invite', code: room.code, max: room.max, game: room.game || 'snakes', mode: room.mode || 'classic', from: { id: u.id, name: u.name } }));
     send(ws, { t: 'ok', msg: 'تم إرسال الدعوة' });
   }
   return true;
@@ -210,6 +215,12 @@ const server = http.createServer((req, res) => {
     fs.readFile(path.join(__dirname, 'public', 'index.html'), (err, data) => {
       if (err) { res.writeHead(500); return res.end('error'); }
       res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' });
+      res.end(data);
+    });
+  } else if (/^\/icon(-192|-512)?\.(png|svg)$/.test(req.url)) {
+    fs.readFile(path.join(__dirname, 'public', req.url.slice(1)), (err, data) => {
+      if (err) { res.writeHead(404); return res.end('not found'); }
+      res.writeHead(200, { 'Content-Type': req.url.endsWith('.svg') ? 'image/svg+xml' : 'image/png', 'Cache-Control': 'public, max-age=86400' });
       res.end(data);
     });
   } else if (req.url === '/health') {
@@ -238,12 +249,18 @@ function sendRoom(room) {
       winner: room.winner,
       pub: !!room.pub,
       game: room.game || 'snakes',
+      mode: room.mode || 'classic',
+      acts: room.game === 'ludo' && room.mode === 'battle' && room.state === 'play'
+        ? { snipe: ludo.snipeTargets(room, room.turn).map(t => ({ i: t.i, tok: t.tok })), trap: ludo.canTrap(room, room.turn) } : null,
       phase: room.phase || null,
       dice: room.dice || 0,
       legal: room.legal || [],
+      legalBy: room.legalBy || {},
+      pend: room.pend || [],
+      rollsLeft: room.rollsLeft || 0,
       reason: room.endReason || null,
       startIn: room.startAt ? Math.max(0, room.startAt - Date.now()) : null,
-      players: room.players.map(q => ({ name: q.name, color: q.color, pos: q.pos, tokens: q.tokens || null, seat: q.seat == null ? null : q.seat, online: !!q.ws || !!q.bot })),
+      players: room.players.map((q, qi) => ({ name: q.name, color: q.color, pos: q.pos, tokens: q.tokens || null, hp: q.hp || null, traps: qi === i ? (q.traps || []) : [], seat: q.seat == null ? null : q.seat, online: !!q.ws || !!q.bot })),
     });
   });
 }
@@ -369,63 +386,123 @@ function armTimer(room) {
   if (room.state !== 'play') return;
   const cur = room.players[room.turn];
   const botDelay = room.game === 'ludo' && room.phase === 'move' ? Math.round(BOT_MS * 0.7) : BOT_MS;
-  room.timer = setTimeout(() => autoAct(room), cur && cur.bot ? botDelay : TURN_MS);
+  room.timer = setTimeout(() => autoAct(room), cur && cur.bot ? botDelay : (room.mode === 'battle' ? 20000 : TURN_MS));
 }
 // حركة تلقائية: للجهاز، أو للاعب تأخّر عن وقته
 function autoAct(room) {
   if (room.state !== 'play') return;
   if (room.game === 'ludo') {
-    if (room.phase === 'move') {
-      const p = room.players[room.turn];
-      const legal = p ? ludo.legalMoves(p, room.dice) : [];
-      if (legal.length) ludoMove(room, ludo.chooseBot(room, room.turn, legal));
-      else nextTurn(room), sendRoom(room);
-    } else ludoRoll(room);
+    if (room.mode === 'battle') {                    // قدرات المعركة أولاً: فخ ثم قنص
+      if (ludo.canTrap(room, room.turn)) { ludoTrap(room); return; }
+      const tg = ludo.snipeTargets(room, room.turn);
+      if (tg.length) { ludoShoot(room, tg[0].i, tg[0].tok); return; }
+      if (room.phase === 'act') { nextTurn(room); sendRoom(room); return; }
+    }
+    if (room.legal && room.legal.length) {          // فيه حركة متاحة: العب أولاً
+      const c = ludo.chooseBot(room, room.turn);
+      if (c) ludoMove(room, c.tok, c.val); else { nextTurn(room); sendRoom(room); }
+    } else if (room.rollsLeft > 0) ludoRoll(room);
+    else { nextTurn(room); sendRoom(room); }
   } else doRoll(room);
 }
 
 function nextTurn(room) {
   room.phase = 'roll'; room.sixes = 0; room.legal = [];
+  room.legalBy = {}; room.pend = []; room.rollsLeft = 1;
   if (!room.players.some(p => p.ws)) { clearTimeout(room.timer); return; }
   const n = room.players.length;
   for (let k = 1; k <= n; k++) {
     const j = (room.turn + k) % n;
-    if (room.players[j].ws || room.players[j].bot) { room.turn = j; armTimer(room); return; }
+    if (room.players[j].ws || room.players[j].bot) { room.turn = j; if (room.mode === 'battle') ludo.resetTurn(room); armTimer(room); return; }
   }
   clearTimeout(room.timer);
 }
 
+// ---- لودو: الرميات المخزّنة ----
+// عند رمي 6 ياخذ اللاعب رمية إضافية فوراً، ويكدر يلعب السته أو يرمي مرة ثانية (والستات تتخزّن).
+// ثلاث ستات متتالية = يضيع الدور. الأكل والوصول للبيت يعطيان رمية إضافية أيضاً.
+function ludoNoMoves(room) { return room.rollsLeft === 0 && !room.legal.length; }
+// المعركة: إذا خلص الدور وعند اللاعب قدرة متاحة (قنص/فخ) ننتظره بدل ما ننهي الدور مباشرة
+function ludoHasActs(room) {
+  return room.mode === 'battle' && (ludo.canTrap(room, room.turn) || ludo.snipeTargets(room, room.turn).length > 0);
+}
+function ludoFinishTurn(room) {
+  if (ludoHasActs(room)) { room.phase = 'act'; armTimer(room); sendRoom(room); return; }
+  nextTurn(room); sendRoom(room);
+}
+function ludoAfterAction(room) {
+  if (room.phase === 'act' && !ludoHasActs(room)) { nextTurn(room); sendRoom(room); return; }
+  armTimer(room); sendRoom(room);
+}
+function ludoShoot(room, qi, qt) {
+  if (room.state !== 'play' || room.game !== 'ludo' || room.mode !== 'battle') return;
+  const r = ludo.doSnipe(room, room.turn, qi, qt);
+  if (!r) return;
+  broadcast(room, { t: 'lshot', i: room.turn, target: r.hit, captured: r.captured });
+  ludoAfterAction(room);
+}
+function ludoTrap(room) {
+  if (room.state !== 'play' || room.game !== 'ludo' || room.mode !== 'battle') return;
+  if (!ludo.placeTrap(room, room.turn)) return;
+  broadcast(room, { t: 'ltrapset', i: room.turn });
+  ludoAfterAction(room);
+}
+function ludoAdvance(room) {
+  const p = room.players[room.turn];
+  if (room.rollsLeft === 0) {
+    // لا رميات متبقية: إذا ما بقى إلا خيار واحد يُنفَّذ تلقائياً
+    const pairs = [];
+    for (const v in room.legalBy) room.legalBy[v].forEach(t => pairs.push([t, +v]));
+    if (pairs.length === 1) { ludoMove(room, pairs[0][0], pairs[0][1]); return; }
+  }
+  room.phase = room.legal.length ? 'move' : 'roll';
+  armTimer(room); sendRoom(room);
+}
 function ludoRoll(room) {
-  if (room.state !== 'play' || room.game !== 'ludo' || room.phase !== 'roll') return;
+  if (room.state !== 'play' || room.game !== 'ludo' || !(room.rollsLeft > 0)) return;
   const i = room.turn, p = room.players[i];
   if (!p) return;
   const dice = 1 + Math.floor(Math.random() * 6);
   room.dice = dice;
+  room.rollsLeft--;
   room.sixes = dice === 6 ? room.sixes + 1 : 0;
-  let legal = ludo.legalMoves(p, dice), pass = false, why = null;
-  if (room.sixes >= 3) { legal = []; pass = true; why = 'six3'; }   // ثلاث ستات متتالية: يضيع الدور
-  else if (!legal.length) { pass = true; why = 'none'; }
-  broadcast(room, { t: 'lroll', i, dice, legal, pass, why });
-  if (pass) { nextTurn(room); sendRoom(room); return; }
-  if (legal.length === 1) { ludoMove(room, legal[0]); return; }  // حركة وحيدة: تُنفَّذ تلقائياً
-  room.phase = 'move'; room.legal = legal;
-  armTimer(room); sendRoom(room);
+  if (room.sixes >= 3) {                       // ثلاث ستات متتالية: يضيع الدور
+    room.pend = []; room.rollsLeft = 0;
+    broadcast(room, { t: 'lroll', i, dice, legal: [], pass: true, why: 'six3' });
+    nextTurn(room); sendRoom(room); return;
+  }
+  room.pend.push(dice);
+  if (dice === 6) room.rollsLeft++;            // السته = رمية إضافية
+  ludo.refreshLegal(room, p);
+  const pass = ludoNoMoves(room);
+  broadcast(room, { t: 'lroll', i, dice, legal: ludo.legalMoves(p, dice), pass, why: pass ? 'none' : null });
+  if (pass) { ludoFinishTurn(room); return; }
+  ludoAdvance(room);
 }
-function ludoMove(room, ti) {
+function ludoMove(room, ti, val) {
   if (room.state !== 'play' || room.game !== 'ludo') return;
   const i = room.turn, p = room.players[i];
-  if (!p) return;
-  if (!ludo.legalMoves(p, room.dice).includes(ti)) return;
-  const r = ludo.applyMove(room, i, ti);
-  broadcast(room, { t: 'lmove', i, tok: ti, dice: room.dice, from: r.from, to: r.to, captured: r.captured });
-  room.legal = [];
-  if (ludo.allHome(p)) {
-    room.state = 'done'; room.winner = i; room.endReason = 'win';
+  if (!p || !room.legal || !room.legal.length) return;
+  if (val == null || isNaN(val)) {
+    val = room.pend.find(v => (room.legalBy[v] || []).includes(ti));
+  }
+  if (!room.pend.includes(val) || !(room.legalBy[val] || []).includes(ti)) return;
+  room.pend.splice(room.pend.indexOf(val), 1);
+  const battle = room.mode === 'battle';
+  const r = battle ? ludo.applyMoveBattle(room, i, ti, val) : ludo.applyMove(room, i, ti, val);
+  if (battle && !room.ts.moved.includes(ti)) room.ts.moved.push(ti);
+  broadcast(room, { t: 'lmove', i, tok: ti, dice: val, from: r.from, to: r.to, captured: r.captured, hits: battle ? r.hits : undefined, trap: battle ? r.trap : undefined });
+  if (ludo.hasWon(room, p)) {
+    room.state = 'done'; room.winner = i; room.legal = []; room.legalBy = {}; room.pend = [];
     clearTimeout(room.timer); sendRoom(room); return;
   }
-  const extra = room.dice === 6 || r.captured.length > 0 || r.to === ludo.FINISH; // رمية إضافية
-  if (extra) { room.phase = 'roll'; armTimer(room); } else nextTurn(room);
-  sendRoom(room);
+  if (battle) {
+    if (r.rushKill && !room.ts.rush) { room.ts.rush = true; room.rollsLeft++; }   // المندفع: رمية إضافية بعد القتل (مرة بالدور)
+    if (r.to === ludo.FINISH) room.rollsLeft++;
+  } else if (r.captured.length > 0 || r.to === ludo.FINISH) room.rollsLeft++;     // رمية إضافية
+  ludo.refreshLegal(room, p);
+  if (ludoNoMoves(room)) { ludoFinishTurn(room); return; }
+  ludoAdvance(room);
 }
 
 function doRoll(room) {
@@ -469,7 +546,8 @@ wss.on('connection', ws => {
       if (ws.room) detach(ws);
       const game = m.game === 'ludo' && ludo ? 'ludo' : 'snakes';
       const max = game === 'ludo' ? 4 : (m.max === 6 ? 6 : 4);
-      const room = { code: makeCode(), max, game, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
+      const mode = game === 'ludo' && (m.mode === 'quick' || m.mode === 'battle') ? m.mode : 'classic';
+      const room = { code: makeCode(), max, game, mode, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
       const player = { token, name: ws.user ? ws.user.name : cleanName(m.name), color: COLORS[0], pos: 0, ws: null };
       room.players.push(player);
       rooms.set(room.code, room);
@@ -513,12 +591,13 @@ wss.on('connection', ws => {
       if (!token || !ws.user) return;
       if (ws.room) detach(ws);
       const rgame = m.game === 'ludo' && ludo ? 'ludo' : 'snakes';
+      const rmode = rgame === 'ludo' && (m.mode === 'quick' || m.mode === 'battle') ? m.mode : 'classic';
       let room = null;
       for (const r of rooms.values()) {
-        if (r.pub && (r.game || 'snakes') === rgame && r.state === 'lobby' && r.players.length < r.max && !r.players.some(p => p.token === token)) { room = r; break; }
+        if (r.pub && (r.game || 'snakes') === rgame && (r.mode || 'classic') === rmode && r.state === 'lobby' && r.players.length < r.max && !r.players.some(p => p.token === token)) { room = r; break; }
       }
       if (!room) {
-        room = { code: makeCode(), max: 4, game: rgame, pub: true, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
+        room = { code: makeCode(), max: 4, game: rgame, mode: rmode, pub: true, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
         rooms.set(room.code, room);
       }
       const player = { token, name: ws.user.name, color: pickColor(room), pos: 0, ws: null };
@@ -549,10 +628,22 @@ wss.on('connection', ws => {
       const room = ws.room;
       if (!room || room.game !== 'ludo' || room.players[room.turn] !== ws.player) return;
       ludoRoll(room);
+    } else if (m.t === 'lshoot') {
+      const room = ws.room;
+      if (!room || room.players[room.turn] !== ws.player) return;
+      ludoShoot(room, parseInt(m.i), parseInt(m.tok));
+    } else if (m.t === 'ltrap') {
+      const room = ws.room;
+      if (!room || room.players[room.turn] !== ws.player) return;
+      ludoTrap(room);
+    } else if (m.t === 'lend') {
+      const room = ws.room;
+      if (!room || room.state !== 'play' || room.mode !== 'battle' || room.phase !== 'act' || room.players[room.turn] !== ws.player) return;
+      nextTurn(room); sendRoom(room);
     } else if (m.t === 'lmove') {
       const room = ws.room;
-      if (!room || room.game !== 'ludo' || room.phase !== 'move' || room.players[room.turn] !== ws.player) return;
-      ludoMove(room, parseInt(m.tok));
+      if (!room || room.game !== 'ludo' || room.players[room.turn] !== ws.player) return;
+      ludoMove(room, parseInt(m.tok), m.val == null ? undefined : parseInt(m.val));
     } else if (m.t === 'roll') {
       const room = ws.room;
       if (!room || room.state !== 'play' || room.players[room.turn] !== ws.player) return;
@@ -607,4 +698,4 @@ setInterval(() => {
   }
 }, 60 * 1000);
 
-loadData().then(() => server.listen(PORT, () => console.log('Snakes & Ladders server on port ' + PORT)));
+loadData().then(() => server.listen(PORT, () => console.log('Ka\'da Play server on port ' + PORT)));

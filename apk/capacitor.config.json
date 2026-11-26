@@ -1,10 +1,9 @@
 {
-  "name": "snakes-ladders-apk",
-  "version": "1.0.0",
-  "private": true,
-  "dependencies": {
-    "@capacitor/android": "^6.1.0",
-    "@capacitor/cli": "^6.1.0",
-    "@capacitor/core": "^6.1.0"
+  "appId": "com.kadaplay.app",
+  "appName": "كعدة بلي",
+  "webDir": "www",
+  "server": {
+    "url": "https://CHANGE-ME.onrender.com",
+    "cleartext": false
   }
 }
