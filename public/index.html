@@ -179,7 +179,7 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
 .ltok.target::before{content:'';position:absolute;inset:-48%;border-radius:50%;border:3px solid #ff3b3b;box-shadow:0 0 14px 4px rgba(255,59,59,.9);animation:lhalo .8s ease-in-out infinite;pointer-events:none}
 #lTraps{position:absolute;inset:0;pointer-events:none;z-index:2}
 .ltrap{position:absolute;transform:translate(-50%,-50%);font-size:3.4cqw;line-height:1;opacity:.95;filter:drop-shadow(0 0 3px #000)}
-#lAct{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;min-height:6px}
+#lAct{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;min-height:6px;position:relative;z-index:2}
 #lAct .btn{padding:10px 14px;font-size:15px}
 .ltok.hop{animation:hop .19s ease-out}
 @media (prefers-reduced-motion:reduce){.ltok.legal::before{animation:none}}
@@ -522,14 +522,18 @@ function fitBoard(){
   const ids=L?['lTop','lChips','lCtrl','lWrap']:['top','chips','ctrl','boardWrap'];
   const vw=document.documentElement.clientWidth,vh=window.innerHeight,land=vw/vh>=1.25;
   const cs=getComputedStyle(document.body),pad=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
-  const fixed=$(ids[0]).offsetHeight+$(ids[1]).offsetHeight+$(ids[2]).offsetHeight+24+pad;
+  let fixed=$(ids[0]).offsetHeight+$(ids[1]).offsetHeight+$(ids[2]).offsetHeight+24+pad;
+  if(L){ // نحجز مكان صف الأرقام والتلميح وأزرار القدرات حتى ما تنغطي بالدردشة
+    const battle=(typeof room!=='undefined'&&room&&room.mode==='battle');
+    fixed+=$('lPend').offsetHeight+$('lHint').offsetHeight+Math.max($('lAct').offsetHeight,battle?50:0)+18;
+  }
   let size;
   if(land){size=Math.min(vw-Math.min(340,vw*.3)-24,vh-fixed)}
-  else{size=Math.min(vw-8,vh-fixed-140)}
+  else{size=Math.min(vw-8,vh-fixed-150)}
   size=Math.max(200,Math.floor(size));
   const w=$(ids[3]);w.style.width=size+'px';w.style.height=size+'px';
   if(!L)$('board').style.fontSize=Math.max(8,size/10*.27)+'px';
-  $('chat').style.height=land?'':Math.max(140,Math.floor(vh-fixed-size))+'px';
+  $('chat').style.height=land?'':Math.max(150,Math.floor(vh-fixed-size))+'px';
 }
 window.addEventListener('resize',fitBoard);
 window.addEventListener('orientationchange',()=>setTimeout(fitBoard,200));
@@ -982,6 +986,7 @@ function renderLudo(){
     ((me&&me.traps)||[]).forEach(ri=>{const c=LRING[ri];if(!c)return;const d=document.createElement('div');d.className='ltrap';d.textContent='🪤';d.style.left=((c[0]+.5)/15*100)+'%';d.style.top=((c[1]+.5)/15*100)+'%';trl.appendChild(d)});
   }
   if(!animating&&room.dice>0)$('lDice').textContent=FACES[room.dice-1];
+  fitBoard();
   updateEnd();
 }
 async function ludoRollAnim(m){
