@@ -160,11 +160,10 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
 .ltok.legal{z-index:6;cursor:pointer;border-color:#fff;box-shadow:0 0 0 2px #ffb703,0 0 12px 5px rgba(255,183,3,.95),0 2px 4px #0007,inset 0 -3px 0 #0003}
 .ltok.legal::before{content:'';position:absolute;inset:-48%;border-radius:50%;border:3px solid #ffb703;box-shadow:0 0 14px 4px rgba(255,183,3,.9),inset 0 0 10px 2px rgba(255,183,3,.7);animation:lhalo .8s ease-in-out infinite;pointer-events:none}
 @keyframes lhalo{0%,100%{transform:scale(.8);opacity:.55}50%{transform:scale(1.12);opacity:1}}
-#lPend{display:flex;gap:8px;justify-content:center;min-height:42px;flex-wrap:wrap}
-.pchip{font-size:30px;line-height:1;width:42px;height:42px;border-radius:10px;border:2px solid #fff;background:#fff;color:#1b2a3a;padding:0;cursor:pointer}
+#lPend{display:flex;gap:6px;justify-content:center;align-content:center;flex-wrap:wrap}
+.pchip{font-size:26px;line-height:1;width:36px;height:36px;border-radius:10px;border:2px solid #fff;background:#fff;color:#1b2a3a;padding:0;cursor:pointer}
 .pchip.sel{border-color:#ffb703;box-shadow:0 0 0 3px #ffb703,0 0 12px 3px rgba(255,183,3,.9)}
 .pchip.off{opacity:.4;cursor:default}
-#lHint{min-height:20px;font-size:14px;font-weight:700;color:var(--gold);text-align:center}
 .ltok.dim{opacity:.5}
 #modeRow{display:none;gap:10px;width:100%;max-width:420px;margin:0 auto}
 #modeRow.on{display:flex}
@@ -179,8 +178,14 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
 .ltok.target::before{content:'';position:absolute;inset:-48%;border-radius:50%;border:3px solid #ff3b3b;box-shadow:0 0 14px 4px rgba(255,59,59,.9);animation:lhalo .8s ease-in-out infinite;pointer-events:none}
 #lTraps{position:absolute;inset:0;pointer-events:none;z-index:2}
 .ltrap{position:absolute;transform:translate(-50%,-50%);font-size:3.4cqw;line-height:1;opacity:.95;filter:drop-shadow(0 0 3px #000)}
-#lAct{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;min-height:6px;position:relative;z-index:2}
-#lAct .btn{padding:10px 14px;font-size:15px}
+#lCtrl{display:grid;grid-template-columns:1fr auto 1fr;gap:8px;min-height:88px}
+#lDice{width:84px;height:84px;font-size:62px;border:0;padding:0;cursor:pointer;font-family:inherit;transition:transform .1s,opacity .2s}
+#lDice:active{transform:scale(.93)}
+#lDice.off{opacity:.55;cursor:default}
+#lDice.go{box-shadow:0 0 0 4px var(--gold),0 0 18px 6px rgba(255,183,3,.85);animation:dicego 1s ease-in-out infinite}
+@keyframes dicego{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+#lAct{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;position:relative;z-index:2}
+#lAct .btn{padding:7px 10px;font-size:13px;white-space:nowrap}
 .ltok.hop{animation:hop .19s ease-out}
 @media (prefers-reduced-motion:reduce){.ltok.legal::before{animation:none}}
 .tile.g1{background:linear-gradient(145deg,#6ee07a,#1f9e4a)}
@@ -289,12 +294,10 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
       </div>
     </div>
     <div id="lCtrl">
-      <div id="lDice">⚀</div>
-      <button class="btn" id="lRoll">ارمِ النرد</button>
+      <div id="lPend"></div>
+      <button id="lDice" aria-label="ارمِ النرد">⚀</button>
+      <div id="lAct"></div>
     </div>
-    <div id="lPend"></div>
-    <div id="lHint"></div>
-    <div id="lAct"></div>
   </section>
 
   <section id="game" class="screen">
@@ -502,7 +505,7 @@ function drawArt(){
 
 
 // ---------- الحالة ----------
-let social=null,pendingInvite=null,winShown=false,inviteQueue=[],curGame='snakes',curMode='classic',ldisp=[],selVal=null,snipeMode=false;
+let social=null,pendingInvite=null,winShown=false,inviteQueue=[],curGame='snakes',curMode='classic',ldisp=[],selVal=null,snipeMode=false,ludoCanRoll=false;
 let ws,room=null,disp=[],animating=false,queue=Promise.resolve(),wantRoom=null,retry=null;
 
 function connect(){
@@ -523,22 +526,19 @@ function fitBoard(){
   const vw=document.documentElement.clientWidth,vh=window.innerHeight,land=vw/vh>=1.25;
   const cs=getComputedStyle(document.body),pad=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
   let fixed=$(ids[0]).offsetHeight+$(ids[1]).offsetHeight+$(ids[2]).offsetHeight+24+pad;
-  if(L){ // نحجز مكان صف الأرقام والتلميح وأزرار القدرات حتى ما تنغطي بالدردشة
-    const battle=(typeof room!=='undefined'&&room&&room.mode==='battle');
-    fixed+=$('lPend').offsetHeight+$('lHint').offsetHeight+Math.max($('lAct').offsetHeight,battle?50:0)+18;
-  }
   let size;
   if(land){size=Math.min(vw-Math.min(340,vw*.3)-24,vh-fixed)}
-  else{size=Math.min(vw-8,vh-fixed-150)}
+  else{size=Math.min(vw-8,vh-fixed-(L?130:150))}
   size=Math.max(200,Math.floor(size));
   const w=$(ids[3]);w.style.width=size+'px';w.style.height=size+'px';
   if(!L)$('board').style.fontSize=Math.max(8,size/10*.27)+'px';
-  $('chat').style.height=land?'':Math.max(150,Math.floor(vh-fixed-size))+'px';
+  $('chat').style.minHeight=(!land&&L)?'130px':'';
+  $('chat').style.height=land?'':Math.max(L?130:150,Math.floor(vh-fixed-size))+'px';
 }
 window.addEventListener('resize',fitBoard);
 window.addEventListener('orientationchange',()=>setTimeout(fitBoard,200));
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
-  if(id!=='game'&&id!=='ludo')$('chat').style.height='';else fitBoard();
+  if(id!=='game'&&id!=='ludo'){$('chat').style.height='';$('chat').style.minHeight=''}else fitBoard();
   $('chat').classList.toggle('on',id!=='home'&&id!=='menu')}
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1600)}
 
@@ -960,8 +960,8 @@ function renderLudo(){
   const mine=room.state==='play'&&room.turn===room.you&&!animating;
   const hasMove=(room.legal||[]).length>0;
   const canRoll=mine&&room.rollsLeft>0;
-  const rb=$('lRoll');rb.disabled=!canRoll;rb.classList.toggle('wait',!canRoll);
-  rb.textContent=room.state!=='play'?'انتهت اللعبة':canRoll&&hasMove?'ارمِ مرة ثانية 🎲':canRoll?'ارمِ النرد 🎲':(mine&&hasMove)?'اختر قطعة 👆':(mine&&room.phase==='act')?'استعمل قدرة أو أنهِ دورك':animating?'...':'دور '+room.players[room.turn].name;
+  ludoCanRoll=canRoll;
+  const db=$('lDice');db.classList.toggle('go',canRoll);db.classList.toggle('off',!canRoll);db.setAttribute('aria-disabled',canRoll?'false':'true');
   const pend=$('lPend');pend.innerHTML='';
   if(room.state==='play')(room.pend||[]).forEach((v,k)=>{
     const c=document.createElement('button');c.className='pchip'+(selVal===v?' sel':'')+((room.legalBy||{})[v]?'':' off');
@@ -969,16 +969,13 @@ function renderLudo(){
     c.onclick=(mine&&(room.legalBy||{})[v])?()=>{selVal=selVal===v?null:v;renderLudo()}:null;
     pend.appendChild(c);
   });
-  $('lHint').textContent=!mine?'':canRoll&&hasMove?'العب قطعة بالرقم، أو ارمِ مرة ثانية':(room.pend||[]).length>1&&hasMove?'اضغط رقم لتختار بيه، ثم القطعة':'';
-  if(room.mode==='battle'&&mine&&room.phase==='act')$('lHint').textContent='عندك قدرة متاحة: استعملها أو أنهِ دورك';
-  if(snipeMode&&mine)$('lHint').textContent='🎯 اضغط على العدو اللي تريد تقنصه';
   const act=$('lAct');act.innerHTML='';
   if(room.mode==='battle'&&mine&&room.acts){
-    const mk=(txt,fn)=>{const b=document.createElement('button');b.className='btn alt';b.textContent=txt;b.onclick=fn;act.appendChild(b)};
+    const mk=(txt,fn,alt)=>{const b=document.createElement('button');b.className='btn'+(alt?' alt':'');b.textContent=txt;b.onclick=fn;act.appendChild(b)};
     const sn=room.acts.snipe;
-    if(sn.length)mk(snipeMode?'✖ إلغاء القنص':'🎯 قنص',()=>{if(sn.length===1){tx({t:'lshoot',i:sn[0].i,tok:sn[0].tok})}else{snipeMode=!snipeMode;renderLudo()}});
+    if(sn.length)mk(snipeMode?'✖ إلغاء القنص':'🎯 قنص',()=>{if(sn.length===1){tx({t:'lshoot',i:sn[0].i,tok:sn[0].tok})}else{snipeMode=!snipeMode;if(snipeMode)toast('🎯 اضغط على العدو');renderLudo()}});
     if(room.acts.trap)mk('🪤 انصب فخ',()=>tx({t:'ltrap'}));
-    if(room.phase==='act')mk('⏭ إنهاء الدور',()=>tx({t:'lend'}));
+    if(room.phase==='act')mk('⏭ إنهاء الدور',()=>tx({t:'lend'}),true);
   }
   const trl=$('lTraps');trl.innerHTML='';
   if(room.mode==='battle'&&room.state==='play'){
@@ -1107,7 +1104,7 @@ $('inviteBtn').onclick=openPick;
 document.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>openMenu(b.dataset.game));
 $('menuBack').onclick=()=>show('home');
 $('hFriends').onclick=openAdd;
-$('lRoll').onclick=()=>tx({t:'lroll'});
+$('lDice').onclick=()=>{if(ludoCanRoll)tx({t:'lroll'})};
 $('pickAdd').onclick=()=>{$('pick').classList.remove('on');openAdd()};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.modal').classList.remove('on'));
 $('copyId').onclick=copyId;$('copyId2').onclick=copyId;
