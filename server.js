@@ -3,13 +3,16 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { WebSocketServer } = require('ws');
+let ludo = null;
+try { ludo = require('./ludo'); } catch (e) { console.error('ludo.js غير موجود، لعبة لودو معطلة:', e.message); }
 
 const PORT = process.env.PORT || 3000;
 const SNAKES = { 16: 6, 47: 26, 49: 11, 56: 53, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 98: 78 };
 const LADDERS = { 1: 38, 4: 14, 9: 31, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 80: 100 };
 const COLORS = ['#ff4d6d', '#2ec4b6', '#ffb703', '#4895ef', '#b388ff', '#ff8fab'];
 const EMOJIS = ['😂', '😡', '👏', '😭', '🔥', '👍', '😎', '🙈'];
-const TURN_MS = 25000;
+const TURN_MS = parseInt(process.env.TURN_MS) || 25000;
+const BOT_MS = parseInt(process.env.BOT_MS) || 1400;
 const DC_GRACE = parseInt(process.env.DC_GRACE_MS) || 40000; // مهلة انتظار اللاعب المنقطع قبل اعتباره منسحباً
 
 const rooms = new Map();
@@ -187,7 +190,7 @@ function handleSocial(ws, m, token) {
     const now = Date.now();
     if (now - (ws.lastInvite || 0) < 2000) return true;
     ws.lastInvite = now;
-    socks.forEach(w => send(w, { t: 'invite', code: room.code, max: room.max, from: { id: u.id, name: u.name } }));
+    socks.forEach(w => send(w, { t: 'invite', code: room.code, max: room.max, game: room.game || 'snakes', from: { id: u.id, name: u.name } }));
     send(ws, { t: 'ok', msg: 'تم إرسال الدعوة' });
   }
   return true;
@@ -234,9 +237,13 @@ function sendRoom(room) {
       turn: room.turn,
       winner: room.winner,
       pub: !!room.pub,
+      game: room.game || 'snakes',
+      phase: room.phase || null,
+      dice: room.dice || 0,
+      legal: room.legal || [],
       reason: room.endReason || null,
       startIn: room.startAt ? Math.max(0, room.startAt - Date.now()) : null,
-      players: room.players.map(q => ({ name: q.name, color: q.color, pos: q.pos, online: !!q.ws || !!q.bot })),
+      players: room.players.map(q => ({ name: q.name, color: q.color, pos: q.pos, tokens: q.tokens || null, seat: q.seat == null ? null : q.seat, online: !!q.ws || !!q.bot })),
     });
   });
 }
@@ -328,6 +335,10 @@ function detach(ws) {
   sendRoom(room);
 }
 
+function initGame(room) {
+  if (room.game === 'ludo') ludo.init(room);
+  else room.players.forEach(p => (p.pos = 0));
+}
 function startGame(room) {
   if (!rooms.has(room.code) || room.state !== 'lobby' || room.players.length < 2) return;
   clearTimeout(room.startTimer); room.startTimer = null; room.startAt = null;
@@ -335,7 +346,7 @@ function startGame(room) {
   room.state = 'play';
   room.turn = 0;
   room.winner = -1;
-  room.players.forEach(p => (p.pos = 0));
+  initGame(room);
   armTimer(room);
   sendRoom(room);
 }
@@ -357,10 +368,24 @@ function armTimer(room) {
   clearTimeout(room.timer);
   if (room.state !== 'play') return;
   const cur = room.players[room.turn];
-  room.timer = setTimeout(() => doRoll(room), cur && cur.bot ? 1400 : TURN_MS);
+  const botDelay = room.game === 'ludo' && room.phase === 'move' ? Math.round(BOT_MS * 0.7) : BOT_MS;
+  room.timer = setTimeout(() => autoAct(room), cur && cur.bot ? botDelay : TURN_MS);
+}
+// حركة تلقائية: للجهاز، أو للاعب تأخّر عن وقته
+function autoAct(room) {
+  if (room.state !== 'play') return;
+  if (room.game === 'ludo') {
+    if (room.phase === 'move') {
+      const p = room.players[room.turn];
+      const legal = p ? ludo.legalMoves(p, room.dice) : [];
+      if (legal.length) ludoMove(room, ludo.chooseBot(room, room.turn, legal));
+      else nextTurn(room), sendRoom(room);
+    } else ludoRoll(room);
+  } else doRoll(room);
 }
 
 function nextTurn(room) {
+  room.phase = 'roll'; room.sixes = 0; room.legal = [];
   if (!room.players.some(p => p.ws)) { clearTimeout(room.timer); return; }
   const n = room.players.length;
   for (let k = 1; k <= n; k++) {
@@ -368,6 +393,39 @@ function nextTurn(room) {
     if (room.players[j].ws || room.players[j].bot) { room.turn = j; armTimer(room); return; }
   }
   clearTimeout(room.timer);
+}
+
+function ludoRoll(room) {
+  if (room.state !== 'play' || room.game !== 'ludo' || room.phase !== 'roll') return;
+  const i = room.turn, p = room.players[i];
+  if (!p) return;
+  const dice = 1 + Math.floor(Math.random() * 6);
+  room.dice = dice;
+  room.sixes = dice === 6 ? room.sixes + 1 : 0;
+  let legal = ludo.legalMoves(p, dice), pass = false, why = null;
+  if (room.sixes >= 3) { legal = []; pass = true; why = 'six3'; }   // ثلاث ستات متتالية: يضيع الدور
+  else if (!legal.length) { pass = true; why = 'none'; }
+  broadcast(room, { t: 'lroll', i, dice, legal, pass, why });
+  if (pass) { nextTurn(room); sendRoom(room); return; }
+  if (legal.length === 1) { ludoMove(room, legal[0]); return; }  // حركة وحيدة: تُنفَّذ تلقائياً
+  room.phase = 'move'; room.legal = legal;
+  armTimer(room); sendRoom(room);
+}
+function ludoMove(room, ti) {
+  if (room.state !== 'play' || room.game !== 'ludo') return;
+  const i = room.turn, p = room.players[i];
+  if (!p) return;
+  if (!ludo.legalMoves(p, room.dice).includes(ti)) return;
+  const r = ludo.applyMove(room, i, ti);
+  broadcast(room, { t: 'lmove', i, tok: ti, dice: room.dice, from: r.from, to: r.to, captured: r.captured });
+  room.legal = [];
+  if (ludo.allHome(p)) {
+    room.state = 'done'; room.winner = i; room.endReason = 'win';
+    clearTimeout(room.timer); sendRoom(room); return;
+  }
+  const extra = room.dice === 6 || r.captured.length > 0 || r.to === ludo.FINISH; // رمية إضافية
+  if (extra) { room.phase = 'roll'; armTimer(room); } else nextTurn(room);
+  sendRoom(room);
 }
 
 function doRoll(room) {
@@ -409,8 +467,9 @@ wss.on('connection', ws => {
     if (m.t === 'create') {
       if (!token) return;
       if (ws.room) detach(ws);
-      const max = m.max === 6 ? 6 : 4;
-      const room = { code: makeCode(), max, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
+      const game = m.game === 'ludo' && ludo ? 'ludo' : 'snakes';
+      const max = game === 'ludo' ? 4 : (m.max === 6 ? 6 : 4);
+      const room = { code: makeCode(), max, game, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
       const player = { token, name: ws.user ? ws.user.name : cleanName(m.name), color: COLORS[0], pos: 0, ws: null };
       room.players.push(player);
       rooms.set(room.code, room);
@@ -421,6 +480,7 @@ wss.on('connection', ws => {
           room.players.push({ token: 'bot' + k, name: '🤖 الجهاز' + (nb > 1 ? ' ' + (k + 1) : ''), color: pickColor(room), pos: 0, ws: null, bot: true });
         }
         room.state = 'play';
+        initGame(room);
         armTimer(room);
       }
       attach(ws, room, player);
@@ -452,12 +512,13 @@ wss.on('connection', ws => {
     } else if (m.t === 'random') {
       if (!token || !ws.user) return;
       if (ws.room) detach(ws);
+      const rgame = m.game === 'ludo' && ludo ? 'ludo' : 'snakes';
       let room = null;
       for (const r of rooms.values()) {
-        if (r.pub && r.state === 'lobby' && r.players.length < r.max && !r.players.some(p => p.token === token)) { room = r; break; }
+        if (r.pub && (r.game || 'snakes') === rgame && r.state === 'lobby' && r.players.length < r.max && !r.players.some(p => p.token === token)) { room = r; break; }
       }
       if (!room) {
-        room = { code: makeCode(), max: 4, pub: true, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
+        room = { code: makeCode(), max: 4, game: rgame, pub: true, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
         rooms.set(room.code, room);
       }
       const player = { token, name: ws.user.name, color: pickColor(room), pos: 0, ws: null };
@@ -484,6 +545,14 @@ wss.on('connection', ws => {
       if (!room || room.state !== 'lobby' || room.players[room.host] !== ws.player) return;
       if (room.players.length < 2) return send(ws, { t: 'err', msg: 'تحتاج لاعبين اثنين على الأقل' });
       startGame(room);
+    } else if (m.t === 'lroll') {
+      const room = ws.room;
+      if (!room || room.game !== 'ludo' || room.players[room.turn] !== ws.player) return;
+      ludoRoll(room);
+    } else if (m.t === 'lmove') {
+      const room = ws.room;
+      if (!room || room.game !== 'ludo' || room.phase !== 'move' || room.players[room.turn] !== ws.player) return;
+      ludoMove(room, parseInt(m.tok));
     } else if (m.t === 'roll') {
       const room = ws.room;
       if (!room || room.state !== 'play' || room.players[room.turn] !== ws.player) return;
@@ -493,8 +562,8 @@ wss.on('connection', ws => {
       if (!room || room.state !== 'done' || !room.players.includes(ws.player)) return;
       room.endReason = null;
       if (room.solo) {
-        room.players.forEach(p => (p.pos = 0));
         room.state = 'play'; room.turn = 0; room.winner = -1;
+        initGame(room);
         armTimer(room);
         sendRoom(room);
         return;
