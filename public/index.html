@@ -43,10 +43,10 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-o
 .dot{width:16px;height:16px;border-radius:50%;flex:none;border:2px solid #fff8}
 
 /* اللعب */
-#game{align-items:center;gap:6px;padding-top:6px}
-#top{width:100%;display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--muted)}
-#top button{background:none;color:var(--muted);padding:4px 8px}
-#chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%}
+#game,#ludo{align-items:center;gap:6px;padding-top:6px}
+#top,#lTop{width:100%;display:flex;justify-content:space-between;align-items:center;font-size:14px;color:var(--muted)}
+#top button,#lTop button{background:none;color:var(--muted);padding:4px 8px}
+#chips,#lChips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;width:100%}
 .chip{position:relative;background:var(--panel);border-radius:999px;padding:5px 12px 5px 10px;display:flex;align-items:center;gap:6px;
   font-size:13px;border:2px solid transparent}
 .chip.turn{border-color:var(--gold);background:var(--panel2)}
@@ -63,11 +63,11 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-o
 .tok{will-change:left,top;position:absolute;width:4.6%;height:4.6%;border-radius:50%;border:2px solid #fff;
   transform:translate(-50%,-50%);transition:left .17s linear,top .17s linear;box-shadow:0 2px 4px #0006;z-index:3}
 .tok.me{box-shadow:0 0 0 2px var(--ink),0 0 0 4px #fff}
-#ctrl{display:flex;align-items:center;gap:12px;width:100%;justify-content:center}
-#dice{font-size:54px;line-height:1;width:76px;height:76px;border-radius:18px;background:#fff;color:#1b2a3a;
+#ctrl,#lCtrl{display:flex;align-items:center;gap:12px;width:100%;justify-content:center}
+#dice,#lDice{font-size:54px;line-height:1;width:76px;height:76px;border-radius:18px;background:#fff;color:#1b2a3a;
   display:flex;align-items:center;justify-content:center;flex:none}
-#rollBtn{flex:1;max-width:240px;font-size:18px;padding:16px}
-#rollBtn.wait{background:var(--panel2);color:var(--muted)}
+#rollBtn,#lRoll{flex:1;max-width:240px;font-size:18px;padding:16px}
+#rollBtn.wait,#lRoll.wait{background:var(--panel2);color:var(--muted)}
 #toast{position:fixed;top:12%;left:50%;transform:translateX(-50%);background:#000c;padding:10px 18px;border-radius:12px;
   font-weight:700;opacity:0;transition:opacity .2s;pointer-events:none;z-index:20}
 #toast.on{opacity:1}
@@ -105,8 +105,8 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-o
 @keyframes hop{0%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-80%) scale(1.3)}100%{transform:translate(-50%,-50%) scale(1)}}
 .tok.hop{animation:hop .19s ease-out}
 @keyframes shake{0%{transform:rotate(0)}25%{transform:rotate(-14deg) translateY(-3px)}50%{transform:rotate(12deg)}75%{transform:rotate(-10deg) translateY(-2px)}100%{transform:rotate(0)}}
-#dice.rolling{animation:shake .22s linear infinite}
-#mute{font-size:18px}
+#dice.rolling,#lDice.rolling{animation:shake .22s linear infinite}
+.muteBtn{font-size:18px}
 body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70%),var(--ink)}
 .logo{text-align:center}
 .logo .em{font-size:44px;letter-spacing:6px}
@@ -150,6 +150,26 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
   body{flex-direction:row;gap:8px}
   #chat{height:auto;width:min(340px,30vw);align-self:stretch}
 }
+#lWrap{direction:ltr;width:min(calc(100vw - 8px),55dvh);aspect-ratio:1;position:relative;border:5px solid var(--frame);border-radius:10px;background:var(--frame);flex:none}
+#lSvg{position:absolute;inset:0;width:100%;height:100%}
+#lToks{position:absolute;inset:0}
+.ltok{position:absolute;width:6%;height:6%;padding:0;border-radius:50%;border:2px solid #fff;transform:translate(-50%,-50%);transition:left .17s linear,top .17s linear;box-shadow:0 2px 4px #0007,inset 0 -3px 0 #0003;z-index:3}
+.ltok::after{content:'';position:absolute;inset:-9px;border-radius:50%}
+.ltok.legal{animation:lpulse .75s ease-in-out infinite;z-index:6;cursor:pointer}
+@keyframes lpulse{0%,100%{box-shadow:0 0 0 2px #fff,0 0 0 4px rgba(255,255,255,.15)}50%{box-shadow:0 0 0 3px #fff,0 0 14px 7px rgba(255,255,255,.85)}}
+.ltok.hop{animation:hop .19s ease-out}
+.tile.g1{background:linear-gradient(145deg,#6ee07a,#1f9e4a)}
+.tile.g2{background:linear-gradient(145deg,#ff7b7b,#d62839)}
+.tile.soon{background:linear-gradient(145deg,#4a5080,#323766);opacity:.7;box-shadow:none;cursor:default}
+.tile small{font-size:13px;font-weight:600;opacity:.85}
+#menu{justify-content:center;gap:16px;max-width:420px;width:100%;margin:0 auto}
+.menuhead{display:flex;align-items:center;gap:10px;width:100%}
+.menuhead h2{margin:0;flex:1;text-align:center;font-size:26px}
+#hFriends{width:100%}
+#badgeH{background:var(--bad);color:#fff;border-radius:999px;padding:0 8px;font-size:13px;margin-inline-start:6px}
+#badgeH:empty{display:none}
+#botBtns{display:flex;flex-direction:column;gap:10px}
+#botBtns .btn{width:100%}
 #net{position:fixed;top:0;left:0;right:0;background:#d62e4a;color:#fff;text-align:center;padding:6px;font-size:14px;z-index:30;display:none}
 #net.on{display:block}
 #log p.sys{color:var(--muted);font-style:italic}
@@ -163,19 +183,30 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
 <div id="screens">
 
   <section id="home" class="screen on">
-    <div class="logo"><div class="em">🐍🪜</div><h1>حية ودرج</h1></div>
+    <div class="logo"><div class="em">🎮</div><h1>ألعابنا</h1></div>
     <div class="me">
       <input id="nameIn" maxlength="14" placeholder="اكتب اسمك" autocomplete="off">
       <button class="idpill" id="copyId" aria-label="نسخ رقمك">رقمك <b id="myIdVal">------</b> 📋</button>
       <button class="idpill" data-themes aria-label="المظهر">🎨</button>
     </div>
     <div class="tiles">
+      <button class="tile g1" data-game="snakes"><span class="ic">🐍</span>حية ودرج</button>
+      <button class="tile g2" data-game="ludo"><span class="ic">🎲</span>لودو</button>
+      <button class="tile soon" disabled><span class="ic">💍</span>محيبس<small>قريباً</small></button>
+      <button class="tile soon" disabled><span class="ic">🕵️</span>مافيا<small>قريباً</small></button>
+    </div>
+    <button class="btn alt" id="hFriends">👥 أصدقائي<span id="badgeH"></span></button>
+    <div class="ver">الإصدار 7</div>
+  </section>
+
+  <section id="menu" class="screen">
+    <div class="menuhead"><button class="idpill" id="menuBack">رجوع ↩</button><h2 id="menuTitle"></h2></div>
+    <div class="tiles">
       <button class="tile t1" id="tInvite"><span class="ic">📨</span>دعوة صديق<i id="onlineN"></i></button>
       <button class="tile t2" id="tAdd"><span class="ic">➕</span>إضافة صديق<i id="badge"></i></button>
       <button class="tile t3" id="tRandom"><span class="ic">🎲</span>لعب عشوائي</button>
       <button class="tile t4" id="tBot"><span class="ic">🤖</span>ضد الجهاز</button>
     </div>
-    <div class="ver">الإصدار 6</div>
   </section>
 
   <section id="lobby" class="screen">
@@ -187,8 +218,21 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
     <button class="btn alt" data-leave>خروج</button>
   </section>
 
+  <section id="ludo" class="screen">
+    <div id="lTop"><span id="lcode"></span><button data-themes aria-label="المظهر">🎨</button><button class="muteBtn" aria-label="الصوت">🔊</button><button data-leave>خروج</button></div>
+    <div id="lChips"></div>
+    <div id="lWrap">
+      <svg id="lSvg" viewBox="0 0 15 15"></svg>
+      <div id="lToks"></div>
+    </div>
+    <div id="lCtrl">
+      <div id="lDice">⚀</div>
+      <button class="btn" id="lRoll">ارمِ النرد</button>
+    </div>
+  </section>
+
   <section id="game" class="screen">
-    <div id="top"><span id="gcode"></span><button id="themeBtn2" data-themes aria-label="المظهر">🎨</button><button id="mute" aria-label="الصوت">🔊</button><button data-leave>خروج</button></div>
+    <div id="top"><span id="gcode"></span><button id="themeBtn2" data-themes aria-label="المظهر">🎨</button><button class="muteBtn" aria-label="الصوت">🔊</button><button data-leave>خروج</button></div>
     <div id="chips"></div>
     <div id="boardWrap">
       <div id="board"></div>
@@ -231,9 +275,7 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
 </div></div>
 <div class="modal" id="botp"><div class="card">
   <h3>🤖 العب ضد الجهاز</h3>
-  <button class="btn" data-bots="1">ضد جهاز واحد</button>
-  <button class="btn" data-bots="3">ضد 3 أجهزة</button>
-  <button class="btn" data-bots="5">ضد 5 أجهزة</button>
+  <div id="botBtns"></div>
   <button class="btn alt" data-close>إغلاق</button>
 </div></div>
 <div class="modal" id="inv"><div class="card"><h3 id="invText"></h3><div class="row"><button class="btn" id="invYes">قبول</button><button class="btn alt" id="invNo">رفض</button></div></div></div>
@@ -283,6 +325,7 @@ const sfx={
   chat(){tone(1000,.07,'sine',.1)},
   ding(){tone(1175,.12,'sine',.15);tone(1568,.2,'sine',.12,.1)}
 };
+sfx.cap=()=>{tone(320,.3,'sawtooth',.14,0,70);noise(.08,.3,0,900)};
 document.addEventListener('pointerdown',()=>audio());
 
 let token=localStorage.getItem('sl_token');
@@ -367,7 +410,7 @@ function drawArt(){
 
 
 // ---------- الحالة ----------
-let social=null,pendingInvite=null,winShown=false,inviteQueue=[];
+let social=null,pendingInvite=null,winShown=false,inviteQueue=[],curGame='snakes',ldisp=[];
 let ws,room=null,disp=[],animating=false,queue=Promise.resolve(),wantRoom=null,retry=null;
 
 function connect(){
@@ -382,31 +425,34 @@ function myName(){const n=$('nameIn').value.trim();localStorage.setItem('sl_name
 connect();
 
 function fitBoard(){
-  const g=$('game');if(!g||!g.classList.contains('on'))return;
+  const L=$('ludo').classList.contains('on');
+  if(!L&&!$('game').classList.contains('on'))return;
+  const ids=L?['lTop','lChips','lCtrl','lWrap']:['top','chips','ctrl','boardWrap'];
   const vw=document.documentElement.clientWidth,vh=window.innerHeight,land=vw/vh>=1.25;
   const cs=getComputedStyle(document.body),pad=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
-  const fixed=$('top').offsetHeight+$('chips').offsetHeight+$('ctrl').offsetHeight+24+pad;
+  const fixed=$(ids[0]).offsetHeight+$(ids[1]).offsetHeight+$(ids[2]).offsetHeight+24+pad;
   let size;
   if(land){size=Math.min(vw-Math.min(340,vw*.3)-24,vh-fixed)}
   else{size=Math.min(vw-8,vh-fixed-140)}
   size=Math.max(200,Math.floor(size));
-  const w=$('boardWrap');w.style.width=size+'px';w.style.height=size+'px';
-  $('board').style.fontSize=Math.max(8,size/10*.27)+'px';
+  const w=$(ids[3]);w.style.width=size+'px';w.style.height=size+'px';
+  if(!L)$('board').style.fontSize=Math.max(8,size/10*.27)+'px';
   $('chat').style.height=land?'':Math.max(140,Math.floor(vh-fixed-size))+'px';
 }
 window.addEventListener('resize',fitBoard);
 window.addEventListener('orientationchange',()=>setTimeout(fitBoard,200));
 function show(id){document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
-  if(id!=='game')$('chat').style.height='';else fitBoard();
-  $('chat').classList.toggle('on',id!=='home')}
+  if(id!=='game'&&id!=='ludo')$('chat').style.height='';else fitBoard();
+  $('chat').classList.toggle('on',id!=='home'&&id!=='menu')}
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1600)}
 
 // ---------- معالجة الرسائل ----------
 async function handle(m){
   if(m.t==='room'){
     const wasMine=!!room&&room.state==='play'&&room.turn===room.you;
-    room=m;wantRoom=m.code;
+    room=m;wantRoom=m.code;curGame=m.game||curGame;
     disp=m.players.map(p=>p.pos);
+    ldisp=m.players.map(p=>p.tokens?p.tokens.slice():[-1,-1,-1,-1]);
     if(m.state==='play'&&m.turn===m.you&&!wasMine&&!animating)sfx.turn();
     m._dl=m.startIn!=null?Date.now()+m.startIn:null;
     if(m.state==='lobby'){
@@ -430,6 +476,10 @@ async function handle(m){
       await sleep(350);await slide(i,m.to);
     }
     animating=false;render();
+  }else if(m.t==='lroll'){
+    await ludoRollAnim(m);
+  }else if(m.t==='lmove'){
+    await ludoMoveAnim(m);
   }else if(m.t==='chat'){
     addLog(m);
     if(room&&m.i!==room.you)sfx.chat();
@@ -440,6 +490,7 @@ async function handle(m){
     $('myIdVal').textContent=m.me.id;
     if(!$('nameIn').value.trim())$('nameIn').value=m.me.name;
     $('badge').textContent=m.requests.length||'';
+    $('badgeH').textContent=m.requests.length||'';
     $('onlineN').textContent=m.friends.filter(f=>f.online).length||'';
     $('myIdBig').textContent=m.me.id;
     if(m.requests.length>prev){toast('📩 وصلك طلب صداقة جديد');sfx.ding()}
@@ -447,7 +498,7 @@ async function handle(m){
     if($('pick').classList.contains('on'))renderPick();
   }else if(m.t==='invite'){
     pendingInvite=m;sfx.ding();
-    $('invText').textContent=m.from.name+' يدعوك للعب (غرفة '+m.max+' لاعبين)';
+    $('invText').textContent=m.from.name+' يدعوك للعب '+(m.game==='ludo'?'لودو 🎲':'حية ودرج 🐍')+' (حتى '+m.max+' لاعبين)';
     $('inv').classList.add('on');
   }else if(m.t==='sys'){
     addSys(m.text);toast(m.text);
@@ -486,14 +537,14 @@ function updateSub(){
     if(room.players.length<2)s.textContent='🔍 جاري البحث عن لاعبين...';
     else if(room._dl){s.textContent='🎮 تبدأ اللعبة خلال '+Math.max(0,Math.ceil((room._dl-Date.now())/1000))+' ثانية'}
     else s.textContent='...';
-  }else s.textContent='ادعُ أصدقاءك ثم ابدأ (حتى 6 لاعبين)';
+  }else s.textContent='ادعُ أصدقاءك ثم ابدأ (حتى '+room.max+' لاعبين)';
 }
 setInterval(updateSub,500);
 function render(){
   if(!room)return;
   if(room.state==='lobby'){
     show('lobby');
-    $('lobTitle').textContent=room.pub?'🎲 لعب عشوائي':'🎉 غرفتك';
+    $('lobTitle').textContent=(room.game==='ludo'?'🎲 لودو':'🐍 حية ودرج')+' — '+(room.pub?'لعب عشوائي':'غرفتك');
     const s=$('slots');s.innerHTML='';
     for(let i=0;i<room.max;i++){
       const p=room.players[i],d=document.createElement('div');d.className='slot'+(p?'':' empty');
@@ -509,6 +560,7 @@ function render(){
     updateSub();
     return;
   }
+  if(room.game==='ludo'){renderLudo();return}
   show('game');$('gcode').textContent='الغرفة '+room.code;
   const chips=$('chips');
   chips.innerHTML='';
@@ -521,6 +573,9 @@ function render(){
   const mine=room.state==='play'&&room.turn===room.you&&!animating;
   const rb=$('rollBtn');rb.disabled=!mine;rb.classList.toggle('wait',!mine);
   rb.textContent=room.state!=='play'?'انتهت اللعبة':mine?'ارمِ النرد 🎲':animating?'...':'دور '+room.players[room.turn].name;
+  updateEnd();
+}
+function updateEnd(){
   if(room.state==='done'&&!animating&&room.winner>=0){
     const w=room.players[room.winner];
     const mineWin=room.winner===room.you;
@@ -544,10 +599,109 @@ function addLog(m){
   log.scrollTop=log.scrollHeight;
 }
 function bubble(i,e){
-  const c=$('chip'+i);if(!c)return;
+  const c=$((room&&room.game==='ludo'?'lchip':'chip')+i);if(!c)return;
   const old=c.querySelector('.bubble');if(old)old.remove();
   const b=document.createElement('span');b.className='bubble';b.textContent=e;c.appendChild(b);
   setTimeout(()=>b.remove(),2500);
+}
+
+// ---------- لودو ----------
+const LSEAT=['#e5383b','#2fbf71','#f4c20d','#2f7be5'];
+const LRING=[];
+(function(){
+  const seg=(x1,y1,x2,y2)=>{const dx=Math.sign(x2-x1),dy=Math.sign(y2-y1);let x=x1,y=y1;for(;;){LRING.push([x,y]);if(x===x2&&y===y2)break;x+=dx;y+=dy}};
+  seg(1,6,5,6);seg(6,5,6,0);seg(7,0,8,0);seg(8,1,8,5);seg(9,6,14,6);seg(14,7,14,8);
+  seg(13,8,9,8);seg(8,9,8,14);seg(7,14,6,14);seg(6,13,6,9);seg(5,8,0,8);seg(0,7,0,6);
+})();
+const LHOME=[[[1,7],[2,7],[3,7],[4,7],[5,7]],[[7,1],[7,2],[7,3],[7,4],[7,5]],[[13,7],[12,7],[11,7],[10,7],[9,7]],[[7,13],[7,12],[7,11],[7,10],[7,9]]];
+const LBASE=[[[2,2],[4,2],[2,4],[4,4]],[[11,2],[13,2],[11,4],[13,4]],[[11,11],[13,11],[11,13],[13,13]],[[2,11],[4,11],[2,13],[4,13]]];
+const LBASEORG=[[0,0],[9,0],[9,9],[0,9]];
+const LFIN=[[6.85,7.5],[7.5,6.85],[8.15,7.5],[7.5,8.15]];
+function lpos(seat,r,tok){
+  if(r<0)return LBASE[seat][tok].slice();
+  if(r<=50){const c=LRING[(13*seat+r)%52];return [c[0]+.5,c[1]+.5]}
+  if(r<=55){const c=LHOME[seat][r-51];return [c[0]+.5,c[1]+.5]}
+  return LFIN[seat].slice();
+}
+(function drawLudo(){
+  const NS='http://www.w3.org/2000/svg',svg=$('lSvg');
+  const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);svg.appendChild(e);return e};
+  for(let s=0;s<4;s++){
+    const bx=LBASEORG[s][0],by=LBASEORG[s][1];
+    el('rect',{x:bx,y:by,width:6,height:6,fill:LSEAT[s]});
+    el('rect',{x:bx+1,y:by+1,width:4,height:4,rx:.7,fill:'#fff','fill-opacity':.88});
+    LBASE[s].forEach(p=>el('circle',{cx:p[0],cy:p[1],r:.72,fill:LSEAT[s],'fill-opacity':.5,stroke:LSEAT[s],'stroke-width':.08}));
+  }
+  LRING.forEach((c,k)=>{
+    const start=k%13===0;
+    el('rect',{x:c[0],y:c[1],width:1,height:1,style:'fill:'+(start?LSEAT[k/13]:'var(--ca)')+';stroke:var(--grid);stroke-width:.05'});
+    if(k%13===8){const t=el('text',{x:c[0]+.5,y:c[1]+.78,'text-anchor':'middle','font-size':.8,fill:'#d9a400'});t.textContent='★'}
+  });
+  LHOME.forEach((cells,s)=>cells.forEach(c=>el('rect',{x:c[0],y:c[1],width:1,height:1,fill:LSEAT[s],'fill-opacity':.85,stroke:'#0003','stroke-width':.05})));
+  [[6,6,6,9],[6,6,9,6],[9,6,9,9],[6,9,9,9]].forEach((q,s)=>el('polygon',{points:q[0]+','+q[1]+' '+q[2]+','+q[3]+' 7.5,7.5',fill:LSEAT[s]}));
+})();
+function placeLudo(){
+  if(!room||!room.players.some(p=>p.tokens))return;
+  const box=$('lToks'),items=[];
+  room.players.forEach((p,i)=>{
+    const d=ldisp[i]||[-1,-1,-1,-1];
+    d.forEach((r,t)=>items.push({i,t,r,color:p.color,xy:lpos(p.seat==null?0:p.seat,r,t)}));
+  });
+  const groups={};
+  items.forEach(it=>{if(it.r<0)return;const k=it.xy[0].toFixed(2)+','+it.xy[1].toFixed(2);(groups[k]=groups[k]||[]).push(it)});
+  for(const k in groups){const g=groups[k];if(g.length>1)g.forEach((it,j)=>{const a=(j/g.length)*2*Math.PI+.6;it.xy=[it.xy[0]+Math.cos(a)*.24,it.xy[1]+Math.sin(a)*.24]})}
+  while(box.children.length>items.length)box.lastChild.remove();
+  const myTurn=room.state==='play'&&room.turn===room.you&&room.phase==='move'&&!animating;
+  const legal=myTurn?new Set(room.legal):null;
+  items.forEach((it,idx)=>{
+    let e=box.children[idx];
+    if(!e){e=document.createElement('button');e.className='ltok';box.appendChild(e)}
+    e.style.background=it.color;e.style.left=(it.xy[0]/15*100)+'%';e.style.top=(it.xy[1]/15*100)+'%';
+    const ok=!!legal&&it.i===room.you&&legal.has(it.t);
+    e.classList.toggle('legal',ok);
+    e.onclick=ok?()=>tx({t:'lmove',tok:it.t}):null;
+  });
+}
+function hopL(i,t){const e=$('lToks').children[i*4+t];if(!e)return;e.classList.remove('hop');void e.offsetWidth;e.classList.add('hop')}
+function renderLudo(){
+  if(!room)return;
+  show('ludo');$('lcode').textContent='الغرفة '+room.code;
+  const chips=$('lChips');chips.innerHTML='';
+  room.players.forEach((p,i)=>{
+    const c=document.createElement('div');c.className='chip'+(i===room.turn&&room.state==='play'?' turn':'')+(p.online?'':' off');c.id='lchip'+i;
+    const d=document.createElement('span');d.className='dot';d.style.background=p.color;
+    c.append(d,document.createTextNode(p.name+(p.online?'':' ⚠️')));chips.appendChild(c);
+  });
+  placeLudo();fitBoard();
+  const mine=room.state==='play'&&room.turn===room.you&&!animating;
+  const canRoll=mine&&room.phase==='roll';
+  const rb=$('lRoll');rb.disabled=!canRoll;rb.classList.toggle('wait',!canRoll);
+  rb.textContent=room.state!=='play'?'انتهت اللعبة':canRoll?'ارمِ النرد 🎲':(mine&&room.phase==='move')?'اختر قطعة 👆':animating?'...':'دور '+room.players[room.turn].name;
+  if(!animating&&room.dice>0)$('lDice').textContent=FACES[room.dice-1];
+  updateEnd();
+}
+async function ludoRollAnim(m){
+  animating=true;renderLudo();
+  const dice=$('lDice');dice.classList.add('rolling');
+  for(let k=0;k<9;k++){dice.textContent=FACES[Math.floor(Math.random()*6)];sfx.rattle();await sleep(75)}
+  dice.classList.remove('rolling');dice.textContent=FACES[m.dice-1];sfx.land();
+  await sleep(300);
+  if(m.pass){toast(m.why==='six3'?'٣ ستات متتالية، ضاع دورك':'لا توجد حركة متاحة');sfx.bad();await sleep(700)}
+  animating=false;
+  if(m.pass||m.legal.length!==1)renderLudo();
+}
+async function ludoMoveAnim(m){
+  animating=true;renderLudo();
+  const i=m.i,t=m.tok;
+  if(!ldisp[i])ldisp[i]=[-1,-1,-1,-1];
+  if(m.from===-1){ldisp[i][t]=0;placeLudo();hopL(i,t);sfx.step(1);await sleep(260)}
+  else for(let r=m.from+1;r<=m.to;r++){ldisp[i][t]=r;placeLudo();hopL(i,t);sfx.step(r-m.from);await sleep(180)}
+  if(m.captured.length){
+    m.captured.forEach(c=>{if(ldisp[c.i])ldisp[c.i][c.tok]=-1});
+    placeLudo();sfx.cap();toast('💥 أكلت قطعة!');await sleep(550);
+  }
+  if(m.to===56){sfx.ladder();toast('🏠 وصلت قطعة للبيت!');await sleep(500)}
+  animating=false;renderLudo();
 }
 
 // ---------- الأصدقاء ----------
@@ -598,27 +752,41 @@ function inviteFriend(f){
   sentAt[f.id]=Date.now();
   setTimeout(()=>{if($('pick').classList.contains('on'))renderPick()},15100);
   if(room&&room.state==='lobby'){tx({t:'invite',id:f.id});renderPick()}
-  else{inviteQueue=[f.id];$('pick').classList.remove('on');tx({t:'create',max:6,name:myName()})}
+  else{inviteQueue=[f.id];$('pick').classList.remove('on');tx({t:'create',game:curGame,max:curGame==='ludo'?4:6,name:myName()})}
+}
+function openMenu(g){curGame=g;$('menuTitle').textContent=g==='ludo'?'🎲 لودو':'🐍 حية ودرج';show('menu')}
+function openBots(){
+  const box=$('botBtns');box.innerHTML='';
+  (curGame==='ludo'?[1,2,3]:[1,3,5]).forEach(n=>{
+    const b=document.createElement('button');b.className='btn';b.textContent=n===1?'ضد جهاز واحد':'ضد '+n+' أجهزة';
+    b.onclick=()=>{$('botp').classList.remove('on');tx({t:'create',game:curGame,max:curGame==='ludo'?4:6,bots:n,name:myName()})};
+    box.appendChild(b);
+  });
+  $('botp').classList.add('on');
 }
 function openAdd(){renderAdd();$('addp').classList.add('on')}
 function openPick(){renderPick();$('pick').classList.add('on')}
 function copyId(){const v=$('myIdVal').textContent;
   if(navigator.clipboard)navigator.clipboard.writeText(v).then(()=>toast('تم نسخ رقمك'),()=>toast('رقمك: '+v));else toast('رقمك: '+v)}
 
-if(window.ResizeObserver){const ro=new ResizeObserver(()=>fitBoard());[$('top'),$('chips'),$('ctrl')].forEach(e=>ro.observe(e))}
+if(window.ResizeObserver){const ro=new ResizeObserver(()=>fitBoard());[$('top'),$('chips'),$('ctrl'),$('lTop'),$('lChips'),$('lCtrl')].forEach(e=>ro.observe(e))}
 // ---------- الأزرار ----------
 $('tInvite').onclick=openPick;
 $('tAdd').onclick=openAdd;
-$('tRandom').onclick=()=>tx({t:'random',name:myName()});
-$('tBot').onclick=()=>$('botp').classList.add('on');
+$('tRandom').onclick=()=>tx({t:'random',game:curGame,name:myName()});
+$('tBot').onclick=openBots;
 $('inviteBtn').onclick=openPick;
+document.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>openMenu(b.dataset.game));
+$('menuBack').onclick=()=>show('home');
+$('hFriends').onclick=openAdd;
+$('lRoll').onclick=()=>tx({t:'lroll'});
 $('pickAdd').onclick=()=>{$('pick').classList.remove('on');openAdd()};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.modal').classList.remove('on'));
-document.querySelectorAll('[data-bots]').forEach(b=>b.onclick=()=>{$('botp').classList.remove('on');tx({t:'create',max:6,bots:+b.dataset.bots,name:myName()})});
 $('copyId').onclick=copyId;$('copyId2').onclick=copyId;
 $('fadd').onclick=()=>{const v=$('fid').value.trim();if(!/^\d{6}$/.test(v))return toast('الرقم 6 أرقام');tx({t:'friend_add',id:v});$('fid').value=''};
-$('mute').textContent=muted?'🔇':'🔊';
-$('mute').onclick=()=>{muted=!muted;localStorage.setItem('sl_mute',muted?'1':'0');$('mute').textContent=muted?'🔇':'🔊';if(!muted)sfx.ding()};
+const setMuteIcon=()=>document.querySelectorAll('.muteBtn').forEach(b=>b.textContent=muted?'🔇':'🔊');
+setMuteIcon();
+document.querySelectorAll('.muteBtn').forEach(b=>b.onclick=()=>{muted=!muted;localStorage.setItem('sl_mute',muted?'1':'0');setMuteIcon();if(!muted)sfx.ding()});
 $('nameIn').onchange=()=>tx({t:'hello',name:$('nameIn').value.trim()});
 $('invNo').onclick=()=>{pendingInvite=null;$('inv').classList.remove('on')};
 $('invYes').onclick=()=>{
@@ -630,7 +798,7 @@ $('invYes').onclick=()=>{
 $('startBtn').onclick=()=>tx({t:'start'});
 $('rollBtn').onclick=()=>tx({t:'roll'});
 $('againBtn').onclick=()=>tx({t:'again'});
-document.querySelectorAll('[data-leave]').forEach(b=>b.onclick=()=>{if(room&&room.state==='play'&&!confirm('الخروج يعني انسحابك من اللعبة. متأكد؟'))return;tx({t:'leave'});wantRoom=null;room=null;inviteQueue=[];$('log').innerHTML='';$('win').classList.remove('on');show('home')});
+document.querySelectorAll('[data-leave]').forEach(b=>b.onclick=()=>{if(room&&room.state==='play'&&!confirm('الخروج يعني انسحابك من اللعبة. متأكد؟'))return;tx({t:'leave'});wantRoom=null;room=null;inviteQueue=[];$('log').innerHTML='';$('win').classList.remove('on');openMenu(curGame)});
 const em=$('emojis');EMOJIS.forEach(e=>{const b=document.createElement('button');b.textContent=e;b.onclick=()=>tx({t:'chat',emoji:e});em.appendChild(b)});
 function sendChat(){const v=$('chatIn').value.trim();if(!v)return;tx({t:'chat',text:v});$('chatIn').value=''}
 $('chatSend').onclick=sendChat;
