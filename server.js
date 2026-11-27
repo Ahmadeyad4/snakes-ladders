@@ -13,8 +13,10 @@ const PORT = process.env.PORT || 3000;
 const SNAKES = { 16: 6, 47: 26, 49: 11, 56: 53, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 98: 78 };
 const LADDERS = { 1: 38, 4: 14, 9: 31, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 80: 100 };
 const COLORS = ['#ff4d6d', '#2ec4b6', '#ffb703', '#4895ef', '#b388ff', '#ff8fab', '#8ac926', '#ff924c', '#4cc9f0', '#c9a227'];
+let mheibes = null;
+try { mheibes = require('./mheibes'); } catch (e) { console.error('mheibes.js غير موجود، لعبة المحيبس معطلة:', e.message); }
 const MAFIA_BOT_NAMES = ['حيدر', 'زينب', 'كرار', 'مريم', 'حسن', 'نور', 'عمر', 'سارة', 'علي'];
-const minPlayers = room => (room.game === 'mafia' ? mafia.MIN : 2);
+const minPlayers = room => (room.game === 'mafia' ? mafia.MIN : room.game === 'mheibes' ? mheibes.MIN : 2);
 const EMOJIS = ['😂', '😡', '👏', '😭', '🔥', '👍', '😎', '🙈'];
 const TURN_MS = parseInt(process.env.TURN_MS) || 25000;
 const BOT_MS = parseInt(process.env.BOT_MS) || 1400;
@@ -36,6 +38,12 @@ const REDIS_TOKEN = process.env.UPSTASH_REDIS_REST_TOKEN || '';
 const REDIS_KEY = 'kadaplay:data';
 const OLD_REDIS_KEY = 'snakes-ladders:data'; // المفتاح القديم: يُقرأ مرة واحدة لنقل الحسابات
 const useRedis = !!(REDIS_URL && REDIS_TOKEN);
+// Supabase (له الأولوية على Upstash): ضبط SUPABASE_URL و SUPABASE_SERVICE_KEY (مفتاح service_role / secret، للسيرفر فقط).
+// الجدول: kadaplay_data (انظر supabase.sql)
+const SUPABASE_URL = (process.env.SUPABASE_URL || '').replace(/\/+$/, '');
+const SUPABASE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
+const SUPABASE_ROW = 'main';
+const useSupabase = !!(SUPABASE_URL && SUPABASE_KEY);
 const sleepMs = ms => new Promise(r => setTimeout(r, ms));
 
 async function redisCmd(args) {
@@ -49,12 +57,42 @@ async function redisCmd(args) {
   if (j.error) throw new Error(j.error);
   return j.result;
 }
+async function supabaseReq(method, query, body, extra) {
+  const headers = Object.assign({ apikey: SUPABASE_KEY, 'Content-Type': 'application/json' }, extra || {});
+  if (SUPABASE_KEY.startsWith('eyJ')) headers.Authorization = 'Bearer ' + SUPABASE_KEY; // المفاتيح الجديدة sb_secret_ تكفي بـ apikey
+  const r = await fetch(SUPABASE_URL + '/rest/v1/kadaplay_data' + query, { method, headers, body: body ? JSON.stringify(body) : undefined });
+  if (!r.ok) throw new Error('supabase http ' + r.status + ' ' + (await r.text()).slice(0, 200));
+  return method === 'GET' ? r.json() : null;
+}
+async function supabaseGet() {
+  const rows = await supabaseReq('GET', '?select=value&key=eq.' + SUPABASE_ROW);
+  return rows && rows[0] ? rows[0].value : null;
+}
+function supabaseSet(obj) {
+  return supabaseReq('POST', '?on_conflict=key', { key: SUPABASE_ROW, value: obj, updated_at: new Date().toISOString() },
+    { Prefer: 'resolution=merge-duplicates,return=minimal' });
+}
 function loadFromFile() {
   try { return JSON.parse(fs.readFileSync(DATA_FILE, 'utf8')); } catch (e) { return null; }
 }
 async function loadData() {
   let d = null;
-  if (useRedis) {
+  if (useSupabase) {
+    for (let i = 0; i < 5; i++) {
+      try { d = await supabaseGet(); break; }
+      catch (e) {
+        console.error('Supabase load failed:', e.message);
+        // لا نبدأ بحسابات فارغة حتى لا نمسح البيانات المحفوظة
+        if (i === 4) { console.error('Giving up, exiting so the host restarts us'); process.exit(1); }
+        await sleepMs(1500);
+      }
+    }
+    if (!d) { // أول تشغيل: انقل الحسابات القديمة من Upstash أو الملف إن وُجدت
+      if (useRedis) { try { const v = await redisCmd(['GET', REDIS_KEY]); d = v ? JSON.parse(v) : null; if (d) console.log('Migrating accounts from Upstash to Supabase'); } catch (e) {} }
+      if (!d) d = loadFromFile();
+      if (d && d.users && Object.keys(d.users).length) { try { await supabaseSet(d); } catch (e) { console.error('Migration save failed:', e.message); } }
+    }
+  } else if (useRedis) {
     for (let i = 0; i < 5; i++) {
       try {
         let v = await redisCmd(['GET', REDIS_KEY]);
@@ -72,7 +110,7 @@ async function loadData() {
   } else d = loadFromFile();
   Object.assign(users, (d && d.users) || {});
   for (const t in users) byId.set(users[t].id, users[t]);
-  console.log('Storage:', useRedis ? 'Upstash Redis' : 'local file', '| users:', Object.keys(users).length);
+  console.log('Storage:', useSupabase ? 'Supabase' : useRedis ? 'Upstash Redis' : 'local file', '| users:', Object.keys(users).length);
 }
 
 let saveTimer = null, saving = false, pending = false, again = false;
@@ -87,7 +125,8 @@ async function flushData() {
   saving = true; pending = false; again = false;
   const payload = JSON.stringify({ users });
   try {
-    if (useRedis) await redisCmd(['SET', REDIS_KEY, payload]);
+    if (useSupabase) await supabaseSet({ users });
+    else if (useRedis) await redisCmd(['SET', REDIS_KEY, payload]);
     else {
       await fs.promises.writeFile(DATA_FILE + '.tmp', payload);
       await fs.promises.rename(DATA_FILE + '.tmp', DATA_FILE);
@@ -264,6 +303,7 @@ function sendRoom(room) {
       env: room.env || 'mine',
       min: minPlayers(room),
       mf: room.game === 'mafia' && mafia ? mafia.view(room, i) : null,
+      mh: room.game === 'mheibes' && mheibes ? mheibes.view(room, i) : null,
       acts: room.game === 'ludo' && room.mode === 'battle' && room.state === 'play'
         ? { snipe: ludo.snipeTargets(room, room.turn).map(t => ({ i: t.i, tok: t.tok })), trap: ludo.canTrap(room, room.turn) } : (room.game !== 'ludo' && room.mode === 'battle' && room.state === 'play'
         ? { snipe: sb.snipeTargets(room, room.turn).map(t => ({ i: t.i })), trap: sb.canTrap(room, room.turn) } : null),
@@ -311,6 +351,12 @@ function removePlayerInGame(room, player, why) {
     clearTimeout(player.dcTimer); player.dcTimer = null;
     if (player.ws) { player.ws.room = null; player.ws.player = null; player.ws = null; }
     mafia.leave(room, player, why);
+    return;
+  }
+  if (room.game === 'mheibes' && room.state === 'play') {    // المحيبس: يبقى مكانه حتى ما تتغير الفرق
+    clearTimeout(player.dcTimer); player.dcTimer = null;
+    if (player.ws) { player.ws.room = null; player.ws.player = null; player.ws = null; }
+    mheibes.leave(room, player, why);
     return;
   }
   clearTimeout(player.dcTimer); player.dcTimer = null;
@@ -367,7 +413,7 @@ function detach(ws) {
         if (!player.ws && rooms.has(room.code) && room.players.includes(player)) removePlayerInGame(room, player, 'dc');
       }, DC_GRACE);
     }
-    if (room.game !== 'mafia' && room.players[room.turn] === player) nextTurn(room);
+    if (room.game !== 'mafia' && room.game !== 'mheibes' && room.players[room.turn] === player) nextTurn(room);
   }
   if (room.state === 'lobby') checkAutoStart(room);
   sendRoom(room);
@@ -379,6 +425,7 @@ const validCls = v => (Number.isInteger(v) && v >= 0 && v <= 3 ? v : null);
 function initGame(room) {
   if (room.game === 'ludo') ludo.init(room);
   else if (room.game === 'mafia') mafia.init(room);
+  else if (room.game === 'mheibes') mheibes.init(room);
   else if (room.mode === 'battle') sb.init(room);
   else room.players.forEach(p => (p.pos = 0));
 }
@@ -408,7 +455,7 @@ function checkAutoStart(room) {
 }
 
 function armTimer(room) {
-  if (room.game === 'mafia') return;   // المافيا لها مؤقتاتها الخاصة (mafia.js)
+  if (room.game === 'mafia' || room.game === 'mheibes') return;   // المافيا والمحيبس لها مؤقتاتها الخاصة (mafia.js)
   clearTimeout(room.timer);
   if (room.state !== 'play') return;
   const cur = room.players[room.turn];
@@ -601,6 +648,10 @@ function doRoll(room) {
   sendRoom(room);
 }
 
+if (mheibes) mheibes.setApi({
+  sendRoom, broadcast, send,
+  destroy: room => { clearTimeout(room.timer); clearTimeout(room.startTimer); rooms.delete(room.code); },
+});
 if (mafia) mafia.setApi({
   sendRoom, broadcast, send,
   destroy: room => { clearTimeout(room.timer); clearTimeout(room.startTimer); rooms.delete(room.code); },
@@ -618,16 +669,16 @@ wss.on('connection', ws => {
     if (m.t === 'create') {
       if (!token) return;
       if (ws.room) detach(ws);
-      const game = m.game === 'ludo' && ludo ? 'ludo' : (m.game === 'mafia' && mafia ? 'mafia' : 'snakes');
-      const max = game === 'ludo' ? 4 : (game === 'mafia' ? mafia.MAX : (m.max === 6 ? 6 : 4));
+      const game = m.game === 'ludo' && ludo ? 'ludo' : (m.game === 'mafia' && mafia ? 'mafia' : (m.game === 'mheibes' && mheibes ? 'mheibes' : 'snakes'));
+      const max = game === 'ludo' ? 4 : (game === 'mafia' ? mafia.MAX : (game === 'mheibes' ? mheibes.MAX : (m.max === 6 ? 6 : 4)));
       const mode = (game === 'ludo' && (m.mode === 'quick' || m.mode === 'battle')) || (game === 'snakes' && m.mode === 'battle') ? m.mode : 'classic';
       const room = { code: makeCode(), max, game, mode, env: game === 'snakes' ? validEnv(m.env) : 'mine', players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
       const player = { token, name: ws.user ? ws.user.name : cleanName(m.name), color: COLORS[0], pos: 0, ws: null, pick: validCls(m.cls) };
       room.players.push(player);
       rooms.set(room.code, room);
       let nb = Math.max(0, Math.min(max - 1, parseInt(m.bots) || 0));
-      if (game === 'mafia' && nb > 0 && nb < mafia.MIN - 1) nb = mafia.MIN - 1;
-      const botNames = game === 'mafia' ? MAFIA_BOT_NAMES.slice().sort(() => Math.random() - 0.5) : null;
+      if ((game === 'mafia' || game === 'mheibes') && nb > 0 && nb < minPlayers(room) - 1) nb = minPlayers(room) - 1;
+      const botNames = game === 'mafia' || game === 'mheibes' ? MAFIA_BOT_NAMES.slice().sort(() => Math.random() - 0.5) : null;
       if (nb > 0) {
         room.solo = true;
         for (let k = 0; k < nb; k++) {
@@ -638,6 +689,7 @@ wss.on('connection', ws => {
         armTimer(room);
       }
       attach(ws, room, player);
+      if (room.game === 'mheibes' && room.state === 'play') mheibes.resume(room);
       if (room.game === 'mafia' && room.state === 'play') mafia.resume(room);   // الآن صار اللاعب متصل: شغّل المؤقتات والأجهزة
       sendRoom(room);
     } else if (m.t === 'join') {
@@ -654,6 +706,7 @@ wss.on('connection', ws => {
         if (room.state === 'play') {
           if (wasOff && !room.solo) broadcast(room, { t: 'sys', text: '✅ ' + player.name + ' رجع للعبة' });
           if (room.game === 'mafia') mafia.resume(room);
+          else if (room.game === 'mheibes') mheibes.resume(room);
           else {
             const cur = room.players[room.turn];
             if (!cur || (!cur.ws && !cur.bot)) nextTurn(room); else armTimer(room);
@@ -671,14 +724,14 @@ wss.on('connection', ws => {
     } else if (m.t === 'random') {
       if (!token || !ws.user) return;
       if (ws.room) detach(ws);
-      const rgame = m.game === 'ludo' && ludo ? 'ludo' : (m.game === 'mafia' && mafia ? 'mafia' : 'snakes');
+      const rgame = m.game === 'ludo' && ludo ? 'ludo' : (m.game === 'mafia' && mafia ? 'mafia' : (m.game === 'mheibes' && mheibes ? 'mheibes' : 'snakes'));
       const rmode = (rgame === 'ludo' && (m.mode === 'quick' || m.mode === 'battle')) || (rgame === 'snakes' && m.mode === 'battle') ? m.mode : 'classic';
       let room = null;
       for (const r of rooms.values()) {
         if (r.pub && (r.game || 'snakes') === rgame && (r.mode || 'classic') === rmode && r.state === 'lobby' && r.players.length < r.max && !r.players.some(p => p.token === token)) { room = r; break; }
       }
       if (!room) {
-        room = { code: makeCode(), max: rgame === 'mafia' ? mafia.MAX : 4, game: rgame, mode: rmode, env: rgame === 'snakes' ? validEnv(m.env) : 'mine', pub: true, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
+        room = { code: makeCode(), max: rgame === 'mafia' ? mafia.MAX : rgame === 'mheibes' ? mheibes.MAX : 4, game: rgame, mode: rmode, env: rgame === 'snakes' ? validEnv(m.env) : 'mine', pub: true, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
         rooms.set(room.code, room);
       }
       const player = { token, name: ws.user.name, color: pickColor(room), pos: 0, ws: null, pick: validCls(m.cls) };
@@ -703,15 +756,15 @@ wss.on('connection', ws => {
     } else if (m.t === 'start') {
       const room = ws.room;
       if (!room || room.state !== 'lobby' || room.players[room.host] !== ws.player) return;
-      if (room.players.length < minPlayers(room)) return send(ws, { t: 'err', msg: room.game === 'mafia' ? 'المافيا تحتاج ' + mafia.MIN + ' لاعبين على الأقل' : 'تحتاج لاعبين اثنين على الأقل' });
+      if (room.players.length < minPlayers(room)) return send(ws, { t: 'err', msg: room.game === 'mafia' ? 'المافيا تحتاج ' + mafia.MIN + ' لاعبين على الأقل' : room.game === 'mheibes' ? 'المحيبس يحتاج ' + mheibes.MIN + ' لاعبين على الأقل' : 'تحتاج لاعبين اثنين على الأقل' });
       startGame(room);
     } else if (m.t === 'pick') {
       const room = ws.room;
-      if (!room || room.state !== 'lobby' || room.game === 'ludo' || room.game === 'mafia' || room.mode !== 'battle' || !room.players.includes(ws.player)) return;
+      if (!room || room.state !== 'lobby' || room.game === 'ludo' || room.game === 'mafia' || room.game === 'mheibes' || room.mode !== 'battle' || !room.players.includes(ws.player)) return;
       ws.player.pick = validCls(m.cls); sendRoom(room);
     } else if (m.t === 'env') {
       const room = ws.room;
-      if (!room || room.state !== 'lobby' || room.game === 'ludo' || room.game === 'mafia' || room.players[room.host] !== ws.player) return;
+      if (!room || room.state !== 'lobby' || room.game === 'ludo' || room.game === 'mafia' || room.game === 'mheibes' || room.players[room.host] !== ws.player) return;
       room.env = validEnv(m.env); sendRoom(room);
     } else if (m.t === 'sshoot') {
       const room = ws.room;
@@ -749,6 +802,10 @@ wss.on('connection', ws => {
       const room = ws.room;
       if (!room || room.game !== 'mafia' || room.state !== 'play' || !ws.player) return;
       mafia.handle(room, ws.player, m);
+    } else if (m.t === 'hhide' || m.t === 'hout' || m.t === 'hbat' || m.t === 'hfx') {
+      const room = ws.room;
+      if (!room || room.game !== 'mheibes' || room.state !== 'play' || !ws.player) return;
+      mheibes.handle(room, ws.player, m);
     } else if (m.t === 'roll') {
       const room = ws.room;
       if (!room || room.state !== 'play' || (room.game || 'snakes') !== 'snakes' || room.players[room.turn] !== ws.player) return;
@@ -758,6 +815,7 @@ wss.on('connection', ws => {
       if (!room || room.state !== 'done' || !room.players.includes(ws.player)) return;
       room.endReason = null;
       if (room.game === 'mafia') mafia.reset(room);
+      if (room.game === 'mheibes') mheibes.reset(room);
       if (room.solo) {
         room.state = 'play'; room.turn = 0; room.winner = -1;
         initGame(room);

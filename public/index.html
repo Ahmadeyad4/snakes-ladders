@@ -405,6 +405,65 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 @keyframes mflip{0%{transform:rotateY(90deg) scale(.7);opacity:0}100%{transform:none;opacity:1}}
 @keyframes mzz{0%,100%{opacity:.4;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
 @media (prefers-reduced-motion:reduce){.mc.tgt,#mSky .stars circle,.rcard,#mNarr.on,.mhint.sleep::after{animation:none}}
+
+.tile.g4{background:linear-gradient(145deg,#ffcf4a,#d9801a);color:#3a2600}
+#chat.hm{height:26dvh}
+#mheibes{overflow-y:auto;overflow-x:hidden;max-width:520px;width:100%;margin:0 auto;gap:8px;padding:4px 2px 10px}
+#hTop{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:14px;flex:none}
+#hTop button{background:none;color:var(--muted);padding:4px 8px}
+#hScore{display:flex;align-items:stretch;gap:8px;flex:none}
+#hScore .ht{flex:1;border-radius:14px;padding:8px 10px;background:var(--panel);border-bottom:4px solid var(--tc);display:flex;align-items:center;justify-content:space-between;gap:6px;font-weight:800;font-size:14px;transition:background .3s}
+#hScore .ht.hid{background:var(--panel2)}
+#hScore .ht b{font-size:13px}
+#hScore .ht span{font-size:26px;color:var(--tc);min-width:26px;text-align:center}
+#hScore .ht i{font-style:normal;font-size:18px}
+#hMid{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--muted);white-space:nowrap}
+#hMid b{color:var(--gold);font-size:18px}
+#hScene{position:relative;flex:none;border-radius:18px;overflow:hidden;padding:12px 14px 16px;display:flex;align-items:center;gap:10px;background:linear-gradient(160deg,#5a3a14,#2a1a0a);transition:background .6s}
+#hScene.ph-seek{background:linear-gradient(160deg,#1f4a7a,#0f2240)}
+#hScene.ph-result{background:linear-gradient(160deg,#6a2a6a,#2a1040)}
+#hScene.ph-done{background:linear-gradient(160deg,#2a2a4a,#4a4a7a)}
+#hIcon{font-size:34px;line-height:1}
+#hScene>div:nth-child(2){flex:1;min-width:0}
+#hTitle{display:block;font-size:19px}
+#hSub{display:block;font-size:13px;opacity:.95}
+#hTime{font-size:22px;font-weight:800;min-width:42px;text-align:center;background:#0007;border-radius:12px;padding:3px 8px;direction:ltr}
+#hBar{position:absolute;left:0;right:0;bottom:0;height:5px;background:#0006}
+#hBar i{display:block;height:100%;width:100%;background:var(--gold);transition:width .25s linear}
+#hNarr{display:none;flex:none;border-radius:12px;padding:9px 12px;font-weight:700;font-size:14.5px;text-align:center;line-height:1.5;background:var(--panel2);border:1px solid #ffffff22}
+#hNarr.on{display:block;animation:mpop .3s ease-out}
+#hNarr.found{background:#124a3b;border-color:#3ddc97}
+#hNarr.miss{background:#5a1523;border-color:#ff6b81}
+#hRow{display:grid;grid-template-columns:1fr 1fr;gap:9px;flex:none}
+.hp{position:relative;display:flex;flex-direction:column;gap:6px;background:var(--panel);border:2px solid transparent;border-radius:16px;padding:8px;border-top:4px solid var(--tc)}
+.hp.me{border-color:#ffffff55}
+.hp.act{border-color:var(--gold)}
+.hp .hn{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13.5px;min-width:0}
+.hp .hn .av{font-size:20px;line-height:1;flex:none}
+.hp .hn .nt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hp .hn small{margin-inline-start:auto;font-size:11px;color:var(--gold);white-space:nowrap}
+.hf2{display:flex;gap:6px}
+.fist{position:relative;flex:1;border-radius:12px;background:var(--panel2);border:2px solid transparent;font-size:34px;line-height:1;padding:7px 0 5px;color:var(--text);transition:transform .1s,border-color .2s}
+.fist small{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+.fist.tgt{border-color:var(--gold);cursor:pointer}
+.fist.tgt:active{transform:scale(.94)}
+.fist.sel{background:#4a3a10;border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
+.fist.opened{opacity:.45;filter:grayscale(.6);cursor:default}
+.fist.ring{background:#4a3a10;border-color:#ffd75e;box-shadow:0 0 14px 2px #ffd75e88}
+.fist.ring::after{content:'💍';position:absolute;top:-9px;inset-inline-end:-4px;font-size:20px;animation:mpop .4s ease-out}
+.fist.pick{border-color:var(--bad)}
+.fist.shake{animation:hshake .6s ease-in-out}
+.fist.shake::before{content:'💦';position:absolute;top:-8px;inset-inline-start:-2px;font-size:15px}
+.hp.dead,.hc.dead{opacity:.4}
+@keyframes hshake{0%,100%{transform:translateX(0) rotate(0)}15%{transform:translateX(-5px) rotate(-8deg)}35%{transform:translateX(5px) rotate(8deg)}55%{transform:translateX(-4px) rotate(-6deg)}75%{transform:translateX(3px) rotate(4deg)}}
+#hSeek{display:flex;flex-wrap:wrap;gap:6px;flex:none}
+.hc{position:relative;display:flex;align-items:center;gap:6px;background:var(--panel);border-radius:999px;padding:5px 12px 5px 10px;font-size:13px;font-weight:700;border:2px solid transparent;border-top:3px solid var(--tc)}
+.hc.act{border-color:var(--gold);background:var(--panel2)}
+.hc.me{border-color:#ffffff55}
+#hAct{display:flex;flex-direction:column;gap:8px;flex:none}
+#hAct .row{display:flex;gap:8px}
+#hAct .row .btn{flex:1}
+@media (prefers-reduced-motion:reduce){.fist.shake,#hNarr.on{animation:none}}
 </style>
 </head>
 <body>
@@ -421,11 +480,11 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
     <div class="tiles">
       <button class="tile g1" data-game="snakes"><span class="ic">🐍</span>حية ودرج</button>
       <button class="tile g2" data-game="ludo"><span class="ic">🎲</span>لودو</button>
-      <button class="tile soon" disabled><span class="ic">💍</span>محيبس<small>قريباً</small></button>
+      <button class="tile g4" data-game="mheibes"><span class="ic">💍</span>محيبس</button>
       <button class="tile g3" data-game="mafia"><span class="ic">🕵️</span>مافيا</button>
     </div>
     <button class="btn alt" id="hFriends">👥 أصدقائي<span id="badgeH"></span></button>
-    <div class="ver">الإصدار 9</div>
+    <div class="ver">الإصدار 10</div>
   </section>
 
   <section id="menu" class="screen">
@@ -443,6 +502,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
       <button class="tile t4" id="tBot"><span class="ic">🤖</span>ضد الجهاز</button>
     </div>
     <button class="btn alt" id="mfRulesBtn" style="display:none">📖 طريقة لعب المافيا</button>
+    <button class="btn alt" id="mhRulesBtn" style="display:none">📖 طريقة لعب المحيبس</button>
   </section>
 
   <section id="lobby" class="screen">
@@ -487,6 +547,20 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
     <div id="mNarr"></div>
     <div id="mAct"></div>
     <div id="mGrid"></div>
+  </section>
+
+  <section id="mheibes" class="screen">
+    <div id="hTop"><span id="hcode"></span><button id="hRules" aria-label="طريقة اللعب">📖</button><button class="muteBtn" aria-label="الصوت">🔊</button><button data-leave>خروج</button></div>
+    <div id="hScore">
+      <div class="ht" id="hT0" style="--tc:#e5383b"><b>🔴 الأحمر</b><i id="hR0"></i><span id="hS0">0</span></div>
+      <div id="hMid">الجولة<b id="hRound">1</b></div>
+      <div class="ht" id="hT1" style="--tc:#4895ef"><span id="hS1">0</span><i id="hR1"></i><b>🔵 الأزرق</b></div>
+    </div>
+    <div id="hScene" class="ph-hide"><span id="hIcon">💍</span><div><b id="hTitle"></b><small id="hSub"></small></div><div id="hTime">0</div><div id="hBar"><i></i></div></div>
+    <div id="hNarr"></div>
+    <div id="hRow"></div>
+    <div id="hAct"></div>
+    <div id="hSeek"></div>
   </section>
 
   <section id="game" class="screen">
@@ -550,6 +624,17 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
   <p><b>👤 المواطن:</b> بدون قدرة، بس عقله وصوته.</p>
   <p><b>سير الجولة:</b> 🌙 ليل (القدرات) ← ☀️ نهار (نقاش بالدردشة) ← 🗳️ تصويت (أكثر واحد يأخذ أصوات ينطرد، والتعادل أو التخطّي = ما ينطرد أحد) ← 🌆 غروب ← ليل جديد.</p>
   <p><b>ملاحظات:</b> يظهر دور اللاعب للجميع عند موته. الأموات يتفرجون ويشوفون كل الأدوار، ويحجون مع بعض فقط. عدد المافيا يتحدد تلقائياً حسب عدد اللاعبين (من 4 إلى 10).</p>
+  <button class="btn alt" data-close>فهمت</button>
+</div></div>
+<div class="modal" id="rulesh"><div class="card rules">
+  <h3>💍 طريقة لعب المحيبس</h3>
+  <p><b>الفكرة:</b> لعبة عراقية تراثية. فريقين: فريق يخفي المحبس بإحدى قبضات لاعبيه (كل لاعب له قبضتين، واللاعب الوحيد ضد فريق من اثنين يحمل 4 قبضات حتى يتساوى عدد القبضات)، والفريق الثاني يدور عليه.</p>
+  <p><b>الإخفاء 🤫:</b> لاعب من الفريق المخفّي (يتبدل كل جولة) يختار القبضة اللي يخبي بيها المحبس. باقي فريقه يكدرون يهزّون القبضات للتمويه 💦.</p>
+  <p><b>البحث 🔎:</b> لاعب من الفريق الثاني هو "الباحث". يراقب القبضات وهزّاتها، وعنده أمرين:</p>
+  <p><b>🖐️ طلّع:</b> يطلب فتح قبضة يظنها فاضية. إذا طلعت فاضية تنشال من اللعبة. وإذا كان فيها المحبس خسر الجولة!</p>
+  <p><b>💍 بات:</b> يقول "المحبس هنا" على قبضة. إذا صح ربح الجولة، وإذا غلط خسرها. وإذا ما بقت غير قبضة وحدة تنحسب له تلقائياً.</p>
+  <p><b>النقاط:</b> الفريق الباحث إذا لقى المحبس ياخذ نقطة ويصير هو اللي يخبّيه. وإذا فشل ياخذ الفريق المخفّي نقطة ويبقى يخبّي. أول فريق يوصل 5 نقاط يفوز.</p>
+  <p><b>ملاحظات:</b> الفرق حسب ترتيب الدخول (أحمر/أزرق بالتناوب). من 2 إلى 4 لاعبين: 1 ضد 1، أو 2 ضد 1، أو 2 ضد 2، وتبدأ اللعبة حسب العدد الموجود. الدردشة مفتوحة للكل، استعملوها للتمويه والتحليل 😏</p>
   <button class="btn alt" data-close>فهمت</button>
 </div></div>
 <div class="modal" id="botp"><div class="card">
@@ -885,7 +970,7 @@ function show(id){if((id==='home'||id==='menu')&&effKey){envApplied='';applyThem
   document.documentElement.classList.toggle('lock',id==='game');if(id==='game')window.scrollTo(0,0);
   if(id!=='game'&&id!=='ludo'){$('chat').style.height='';$('chat').style.minHeight=''}else fitBoard();
   $('chat').classList.toggle('on',id!=='home'&&id!=='menu');
-  $('chat').classList.toggle('gm',id==='game'||id==='ludo'||id==='mafia');$('chat').classList.toggle('mf',id==='mafia');
+  $('chat').classList.toggle('gm',id==='game'||id==='ludo'||id==='mafia'||id==='mheibes');$('chat').classList.toggle('mf',id==='mafia');$('chat').classList.toggle('hm',id==='mheibes');
   if(id!=='mafia'){$('chatIn').disabled=false;$('chatSend').disabled=false;$('chatIn').placeholder='اكتب رسالة'}}
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1600)}
 
@@ -901,7 +986,7 @@ async function handle(m){
     if(m.state==='play'&&m.turn===m.you&&!wasMine&&!animating){sfx.turn();notifyTurn()}
     m._dl=m.startIn!=null?Date.now()+m.startIn:null;
     if(m.state==='lobby'){
-      mNarr=null;mSeen='';mfRenderNarr();
+      mNarr=null;mSeen='';mfRenderNarr();hNarr=null;hKey='';mhRenderNarr();
       $('win').classList.remove('on');
       if(inviteQueue.length){inviteQueue.forEach(id=>tx({t:'invite',id}));inviteQueue=[]}
     }
@@ -967,11 +1052,18 @@ async function handle(m){
     if($('pick').classList.contains('on'))renderPick();
   }else if(m.t==='invite'){
     pendingInvite=m;sfx.ding();
-    $('invText').textContent=m.from.name+' يدعوك للعب '+(m.game==='mafia'?'مافيا 🕵️':m.game==='ludo'?(m.mode==='quick'?'لودو سريع ⚡':m.mode==='battle'?'لودو معركة ⚔️':'لودو 🎲'):(m.mode==='battle'?'حية ودرج معركة ⚔️':'حية ودرج 🐍'))+' (حتى '+m.max+' لاعبين)';
+    $('invText').textContent=m.from.name+' يدعوك للعب '+(m.game==='mheibes'?'محيبس 💍':m.game==='mafia'?'مافيا 🕵️':m.game==='ludo'?(m.mode==='quick'?'لودو سريع ⚡':m.mode==='battle'?'لودو معركة ⚔️':'لودو 🎲'):(m.mode==='battle'?'حية ودرج معركة ⚔️':'حية ودرج 🐍'))+' (حتى '+m.max+' لاعبين)';
     $('inv').classList.add('on');
   }else if(m.t==='mnarr'){
     mNarr=m;addSys(m.text);mfRenderNarr();
     if(m.kind==='death')sfx.gun();else if(m.kind==='save')sfx.heal();
+  }else if(m.t==='hnarr'){
+    hNarr=m;addSys(m.text);mhRenderNarr();
+    if(m.kind==='found')sfx.heal();else if(m.kind==='miss')sfx.bad();
+  }else if(m.t==='hfx'){
+    mhShake(m.fist);sfx.chat();
+  }else if(m.t==='hopen'){
+    sfx.vote();
   }else if(m.t==='mpriv'){
     addSys(m.text);toast(m.text);sfx.ding();
   }else if(m.t==='sys'){
@@ -1015,7 +1107,7 @@ function updateSub(){
     if(room.players.length<mn)s.textContent='🔍 جاري البحث عن لاعبين...'+(mn>2?' (نحتاج '+mn+' على الأقل)':'');
     else if(room._dl){s.textContent='🎮 تبدأ اللعبة خلال '+Math.max(0,Math.ceil((room._dl-Date.now())/1000))+' ثانية'}
     else s.textContent='...';
-  }else s.textContent=room.game==='mafia'?'ادعُ أصدقاءك ثم ابدأ (من '+(room.min||4)+' إلى '+room.max+' لاعبين)':'ادعُ أصدقاءك ثم ابدأ (حتى '+room.max+' لاعبين)';
+  }else s.textContent=room.game==='mafia'||room.game==='mheibes'?'ادعُ أصدقاءك ثم ابدأ (من '+(room.min||4)+' إلى '+room.max+' لاعبين)'+(room.game==='mheibes'?' — الفرق بالتناوب 🔴🔵 وتبدأ حسب العدد (1ض1، 2ض1، 2ض2)':''):'ادعُ أصدقاءك ثم ابدأ (حتى '+room.max+' لاعبين)';
 }
 setInterval(updateSub,500);
 function render(){
@@ -1023,12 +1115,12 @@ function render(){
   syncEnv();
   if(room.state==='lobby'){
     show('lobby');
-    $('lobTitle').textContent=(room.game==='mafia'?'🕵️ مافيا':room.game==='ludo'?(room.mode==='quick'?'🎲 لودو ⚡ سريع':room.mode==='battle'?'⚔️ لودو معركة':'🎲 لودو'):(room.mode==='battle'?'⚔️ حية ودرج معركة':'🐍 حية ودرج'))+' — '+(room.pub?'لعب عشوائي':'غرفتك');
+    $('lobTitle').textContent=(room.game==='mheibes'?'💍 محيبس':room.game==='mafia'?'🕵️ مافيا':room.game==='ludo'?(room.mode==='quick'?'🎲 لودو ⚡ سريع':room.mode==='battle'?'⚔️ لودو معركة':'🎲 لودو'):(room.mode==='battle'?'⚔️ حية ودرج معركة':'🐍 حية ودرج'))+' — '+(room.pub?'لعب عشوائي':'غرفتك');
     const s=$('slots');s.innerHTML='';
     for(let i=0;i<room.max;i++){
       const p=room.players[i],d=document.createElement('div');d.className='slot'+(p?'':' empty');
       if(p){const c=document.createElement('span');c.className='dot';c.style.background=p.color;d.append(c,
-        document.createTextNode((room.mode==='battle'&&room.game!=='ludo'?(p.pick!=null?SBC[p.pick]:'🎲')+' ':'')+p.name+(i===room.host&&!room.pub?' 👑':'')+(i===room.you?' (أنت)':'')))}
+        document.createTextNode((room.game==='mheibes'?(i%2?'🔵 ':'🔴 '):'')+(room.mode==='battle'&&room.game!=='ludo'?(p.pick!=null?SBC[p.pick]:'🎲')+' ':'')+p.name+(i===room.host&&!room.pub?' 👑':'')+(i===room.you?' (أنت)':'')))}
       else d.textContent='بانتظار لاعب...';
       s.appendChild(d);
     }
@@ -1040,6 +1132,7 @@ function render(){
     updateSub();
     return;
   }
+  if(room.game==='mheibes'){renderMheibes();return}
   if(room.game==='mafia'){renderMafia();return}
   if(room.game==='ludo'){renderLudo();return}
   show('game');$('gcode').textContent='الغرفة '+room.code;
@@ -1105,7 +1198,7 @@ function renderLobPick(){
   if(room.host===room.you&&!room.pub)pickDrop(box,'🌍 المظهر (جو اللعب)',ENV_OPTS,room.env||'mine',v=>{myEnv=v;tx({t:'env',env:v})});
   else if(room.env&&room.env!=='mine'){const e=ENV_OPTS.find(o=>o[0]===room.env);if(e){const d=document.createElement('div');d.className='pkt';d.textContent='🌍 جو اللعب: '+e[1]+' '+e[2];box.appendChild(d)}}}
 function syncEnv(){
-  const want=room&&room.game!=='ludo'&&room.game!=='mafia'&&room.env&&room.env!=='mine'&&THEMES[room.env]?room.env:null;
+  const want=room&&room.game!=='ludo'&&room.game!=='mafia'&&room.game!=='mheibes'&&room.env&&room.env!=='mine'&&THEMES[room.env]?room.env:null;
   const tag=want?room.code+':'+want:'';
   if(tag===envApplied)return;
   envApplied=tag;
@@ -1191,7 +1284,7 @@ function addLog(m){
   if($('chat').classList.contains('min')&&m.i!==room.you){chatUnread++;$('chatUnread').textContent=chatUnread}
 }
 function bubble(i,e){
-  const c=$((room&&room.game==='ludo'?'lchip':room&&room.game==='mafia'?'mc':'chip')+i);if(!c)return;
+  const c=$((room&&room.game==='ludo'?'lchip':room&&room.game==='mafia'?'mc':room&&room.game==='mheibes'?'hp':'chip')+i);if(!c)return;
   const old=c.querySelector('.bubble');if(old)old.remove();
   const b=document.createElement('span');b.className='bubble';b.textContent=e;c.appendChild(b);
   setTimeout(()=>b.remove(),2500);
@@ -1342,6 +1435,129 @@ setInterval(()=>{
   const l=Math.max(0,mDl-Date.now());
   $('mTime').textContent=Math.ceil(l/1000);
   $('mBar').firstChild.style.width=(l/mTot*100)+'%';
+},250);
+
+// ---------- محيبس ----------
+const HTEAM=[{n:'🔴 الفريق الأحمر',c:'#e5383b'},{n:'🔵 الفريق الأزرق',c:'#4895ef'}];
+let hNarr=null,hSel=-1,hKey='',hDl=0,hTot=1;
+function mhRenderNarr(){
+  const n=$('hNarr');
+  if(!hNarr){n.className='';n.textContent='';return}
+  n.className='on '+(hNarr.kind||'info');n.textContent=hNarr.text;
+}
+const mhHand=(f,per)=>per===2?((f&3)?'يمين':'يسار'):'قبضة '+((f&3)+1);
+function mhFist(f){return document.getElementById('hf'+f)}
+function mhShake(f){
+  const e=mhFist(f);if(!e)return;
+  e.classList.remove('shake');void e.offsetWidth;e.classList.add('shake');
+  clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('shake'),700);
+}
+function renderMheibes(){
+  const h=room.mh;
+  show('mheibes');
+  $('hcode').textContent='الغرفة '+room.code;
+  if(!h)return;
+  const me=room.you,ph=h.phase,done=room.state==='done',nm=i=>room.players[i]?room.players[i].name:'؟';
+  const key=room.code+':'+h.round+':'+ph;
+  if(key!==hKey){
+    hKey=key;hSel=-1;
+    if(ph==='hide'&&h.hider===me){sfx.turn();notifyTurn()}
+    else if(ph==='seek'&&h.searcher===me){sfx.turn();notifyTurn()}
+  }
+  hDl=Date.now()+h.left;hTot=Math.max(1,h.total);
+  $('hS0').textContent=h.score[0];$('hS1').textContent=h.score[1];
+  $('hRound').textContent=Math.max(1,h.round);
+  $('hT0').classList.toggle('hid',h.hiding===0);$('hT1').classList.toggle('hid',h.hiding===1);
+  $('hR0').textContent=h.hiding===0?'💍':'';$('hR1').textContent=h.hiding===1?'💍':'';
+  const st=1-h.hiding,iHide=h.team===h.hiding;
+  const PH={intro:['💍','المحيبس','أول فريق يوصل '+h.win+' نقاط يفوز'],
+    hide:['🤫','الإخفاء',nm(h.hider)+' يخبّي المحبس'],
+    seek:['🔎','البحث',nm(h.searcher)+' يدور على المحبس'],
+    result:['🏁','نتيجة الجولة','المحبس كان بالقبضة المضيئة'],
+    done:['🏆','انتهت اللعبة','']};
+  const P=PH[ph]||PH.intro;
+  $('hIcon').textContent=P[0];$('hTitle').textContent=P[1];$('hSub').textContent=P[2];
+  $('hScene').className='ph-'+ph;
+  $('hTime').style.visibility=done?'hidden':'';
+  // قبضات الفريق المخفّي
+  const canHide=ph==='hide'&&h.hider===me&&!h.locked;
+  const canSeek=ph==='seek'&&h.searcher===me;
+  const canFx=(ph==='hide'||ph==='seek')&&iHide&&!canHide;
+  const row=$('hRow');row.innerHTML='';
+  room.players.forEach((p,i)=>{
+    const pv=h.players[i];if(pv.t!==h.hiding||pv.l)return;
+    const c=mfEl('div','hp'+(i===me?' me':'')+((ph==='hide'&&i===h.hider)?' act':''));c.id='hp'+i;c.style.setProperty('--tc',HTEAM[pv.t].c);
+    const hn=mfEl('div','hn');hn.append(mfEl('span','av',MAV[i%MAV.length]),mfEl('span','nt',p.name+(i===me?' (أنت)':'')));
+    if(ph==='hide'&&i===h.hider)hn.append(mfEl('small',null,'🤫 المخبّي'));
+    c.append(hn);
+    const fr=mfEl('div','hf2');
+    h.fists.filter(f=>(f>>2)===i).forEach(f=>{
+      const op=h.opened.includes(f),isRing=h.ring===f;
+      const b=mfEl('button','fist'+(op?' opened':'')+(isRing?' ring':'')+(hSel===f?' sel':'')+(h.reveal&&h.reveal.fist===f?' pick':'')+(!op&&(canHide||canSeek||canFx)?' tgt':''));
+      b.id='hf'+f;b.textContent=op?'🖐️':'✊';b.append(mfEl('small',null,mhHand(f,h.per)));
+      b.onclick=()=>{
+        if(op)return;
+        if(canHide||canSeek){hSel=f;renderMheibes()}
+        else if(canFx)tx({t:'hfx',fist:f});
+      };
+      fr.append(b);
+    });
+    c.append(fr);row.append(c);
+  });
+  // الفريق الباحث
+  const sk=$('hSeek');sk.innerHTML='';
+  room.players.forEach((p,i)=>{
+    const pv=h.players[i];if(pv.t!==st||pv.l)return;
+    const c=mfEl('div','hc'+(i===me?' me':'')+((ph==='seek'&&i===h.searcher)?' act':''));c.id='hp'+i;c.style.setProperty('--tc',HTEAM[pv.t].c);
+    c.append(mfEl('span',null,(ph==='seek'&&i===h.searcher?'🔎 ':'')+MAV[i%MAV.length]+' '+p.name+(i===me?' (أنت)':'')));sk.append(c);
+  });
+  // الأزرار والتلميحات
+  const A=$('hAct');A.innerHTML='';
+  const hint=t=>A.append(mfEl('div','mhint',t));
+  if(done){}
+  else if(ph==='intro'){hint('أنت بـ'+HTEAM[h.team].n+(iHide?' — فريقك يبدأ بالإخفاء 💍':' — فريقك يبدأ بالبحث 🔎'))}
+  else if(ph==='hide'){
+    if(canHide){
+      hint('🤫 اختر القبضة اللي تخبّي بيها المحبس (من قبضات فريقك)');
+      const b=mfEl('button','btn','🔒 أخبّي المحبس هنا');b.disabled=hSel<0;b.onclick=()=>{if(hSel>=0)tx({t:'hhide',fist:hSel})};A.append(b);
+    }else if(h.hider===me)hint('🔒 خبّيت المحبس. انتظر الباحث...');
+    else if(iHide)hint('🤫 '+nm(h.hider)+' يخبّي المحبس. بعدين تكدر تهز القبضات للتمويه 💦');
+    else hint('👀 فريق الخصم يخبّي المحبس... استعد');
+  }else if(ph==='seek'){
+    if(canSeek){
+      hint(hSel<0?'🔎 اضغط على قبضة ثم اختر: "طلّع" إذا تظنها فاضية، أو "بات" إذا تظن المحبس فيها':'القبضة المختارة: '+nm(hSel>>2)+' ('+mhHand(hSel,h.per)+')');
+      const r=mfEl('div','row');
+      const o=mfEl('button','btn alt','🖐️ طلّع');o.disabled=hSel<0;o.onclick=()=>{if(hSel>=0){tx({t:'hout',fist:hSel});hSel=-1}};
+      const b=mfEl('button','btn','💍 بات');b.disabled=hSel<0;b.onclick=()=>{if(hSel>=0)tx({t:'hbat',fist:hSel})};
+      r.append(o,b);A.append(r);
+    }else if(iHide){
+      hint(h.hider===me?'💍 المحبس عندك. اهزّ قبضات للتمويه (اضغط عليها) 💦':'😏 اضغط على القبضات لتهزها وتضلل الباحث 💦');
+    }else hint(nm(h.searcher)+' يدور... ساعده بالدردشة 💬');
+  }else if(ph==='result'){
+    const rv=h.reveal;
+    if(rv)hint((rv.win===h.team?'✅ نقطة لفريقك! ':'❌ نقطة للخصم. ')+'الجولة القادمة بعد لحظات...');
+  }
+  mhRenderNarr();
+  const blocked=false;$('chatIn').disabled=blocked;$('chatSend').disabled=blocked;
+  mhEnd();
+}
+function mhEnd(){
+  const h=room.mh;
+  if(room.state==='done'&&h&&h.winner!=null){
+    const mine=h.winner===h.team;
+    $('winText').textContent=h.winner===0?'🔴 فاز الفريق الأحمر!':'🔵 فاز الفريق الأزرق!';
+    const ws=$('winSub');ws.style.whiteSpace='pre-line';
+    ws.textContent=(mine?'🏆 فريقك فاز':'😔 فريقك خسر')+'\n\n'+h.score[0]+' — '+h.score[1];
+    $('againBtn').style.display='';
+    if(!winShown){winShown=true;if(mine)sfx.win();else sfx.bad()}
+    $('win').classList.add('on');
+  }else if(room&&room.game==='mheibes'){winShown=false;$('win').classList.remove('on');$('winSub').style.whiteSpace=''}
+}
+setInterval(()=>{
+  if(!room||room.game!=='mheibes'||!room.mh||room.state!=='play')return;
+  const l=Math.max(0,hDl-Date.now());
+  $('hTime').textContent=Math.ceil(l/1000);
+  $('hBar').firstChild.style.width=(l/hTot*100)+'%';
 },250);
 
 // ---------- لودو ----------
@@ -1746,11 +1962,11 @@ function inviteFriend(f){
 }
 function setMode(m){curMode=m;document.querySelectorAll('.mbtn').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));renderMenuPick()}
 document.querySelectorAll('.mbtn').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
-function openMenu(g){curGame=g;$('menuTitle').textContent=g==='ludo'?'🎲 لودو':g==='mafia'?'🕵️ مافيا':'🐍 حية ودرج';$('modeRow').classList.toggle('on',g!=='mafia');$('mfRulesBtn').style.display=g==='mafia'?'':'none';if(g==='mafia')setMode('classic');document.querySelector('.mbtn[data-mode="quick"]').style.display=g==='ludo'?'':'none';if(g!=='ludo'&&curMode==='quick')setMode('classic');renderMenuPick();show('menu')}
+function openMenu(g){curGame=g;$('menuTitle').textContent=g==='ludo'?'🎲 لودو':g==='mafia'?'🕵️ مافيا':g==='mheibes'?'💍 محيبس':'🐍 حية ودرج';$('modeRow').classList.toggle('on',g!=='mafia'&&g!=='mheibes');$('mfRulesBtn').style.display=g==='mafia'?'':'none';$('mhRulesBtn').style.display=g==='mheibes'?'':'none';if(g==='mafia'||g==='mheibes')setMode('classic');document.querySelector('.mbtn[data-mode="quick"]').style.display=g==='ludo'?'':'none';if(g!=='ludo'&&curMode==='quick')setMode('classic');renderMenuPick();show('menu')}
 function openBots(){
   const box=$('botBtns');box.innerHTML='';
-  (curGame==='ludo'?[1,2,3]:curGame==='mafia'?[3,5,7,9]:[1,3,5]).forEach(n=>{
-    const b=document.createElement('button');b.className='btn';b.textContent=curGame==='mafia'?'مع '+n+' أجهزة ('+(n+1)+' لاعبين)':(n===1?'ضد جهاز واحد':'ضد '+n+' أجهزة');
+  (curGame==='ludo'?[1,2,3]:curGame==='mafia'?[3,5,7,9]:curGame==='mheibes'?[1,2,3]:[1,3,5]).forEach(n=>{
+    const b=document.createElement('button');b.className='btn';b.textContent=curGame==='mheibes'?(n===1?'ضد جهاز واحد (1 ضد 1)':n===2?'مع جهازين (2 ضد 1)':'مع 3 أجهزة (2 ضد 2)'):curGame==='mafia'?'مع '+n+' أجهزة ('+(n+1)+' لاعبين)':(n===1?'ضد جهاز واحد':'ضد '+n+' أجهزة');
     b.onclick=()=>{$('botp').classList.remove('on');tx({t:'create',game:curGame,mode:curMode,cls:myCls,env:myEnv,max:curGame==='ludo'?4:6,bots:n,name:myName()})};
     box.appendChild(b);
   });
@@ -1777,6 +1993,8 @@ document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.m
 $('copyId').onclick=copyId;$('copyId2').onclick=copyId;
 $('mfRulesBtn').onclick=()=>$('rulesp').classList.add('on');
 $('mRules').onclick=()=>$('rulesp').classList.add('on');
+$('mhRulesBtn').onclick=()=>$('rulesh').classList.add('on');
+$('hRules').onclick=()=>$('rulesh').classList.add('on');
 $('fadd').onclick=()=>{const v=$('fid').value.trim();if(!/^\d{6}$/.test(v))return toast('الرقم 6 أرقام');tx({t:'friend_add',id:v});$('fid').value=''};
 const setMuteIcon=()=>document.querySelectorAll('.muteBtn').forEach(b=>b.textContent=(muted||VOLS.master===0)?'🔇':'🔊');
 setMuteIcon();
