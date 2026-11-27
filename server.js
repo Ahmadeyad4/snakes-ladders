@@ -26,7 +26,7 @@ const rooms = new Map();
 
 // ---------- الحسابات والأصدقاء ----------
 const DATA_FILE = process.env.DATA_FILE || path.join(__dirname, 'data.json');
-const users = {};            // token -> { id, name, friends:[id], requests:[id] }
+const users = Object.create(null); // token -> { id, name, friends:[id], requests:[id] } (بدون prototype: توكن مثل __proto__ ما يلوّث Object.prototype)
 const byId = new Map();      // id -> user
 const online = new Map();    // id -> Set(ws)
 
@@ -280,7 +280,25 @@ const server = http.createServer((req, res) => {
   }
 });
 
-const wss = new WebSocketServer({ server });
+const wss = new WebSocketServer({ server, maxPayload: 8 * 1024 }); // الافتراضي 100MB: JSON.parse عليه يجمّد السيرفر
+
+// ---------- حماية من الإغراق والتخمين ----------
+// نفترض بروكسي واحد (Render): آخر عنوان بـ x-forwarded-for هو اللي أضافه البروكسي، وأول عناوين الهيدر ممكن العميل يزوّرها.
+const MSG_PER_SEC = 40, MAX_CONN_PER_IP = 20, JOIN_FAILS = 10, JOIN_WINDOW = 60000;
+const ipConns = new Map(), joinFails = new Map();
+function ipOf(req) {
+  const xf = String((req.headers && req.headers['x-forwarded-for']) || '').split(',').map(x => x.trim()).filter(Boolean);
+  return xf.length ? xf[xf.length - 1] : (req.socket && req.socket.remoteAddress) || '?';
+}
+function joinBlocked(ip) { const f = joinFails.get(ip); return !!f && f.n >= JOIN_FAILS && Date.now() < f.until; }
+function joinFailed(ip) {
+  const now = Date.now(); let f = joinFails.get(ip);
+  if (!f || now > f.until) f = { n: 0, until: now + JOIN_WINDOW };
+  f.n++; joinFails.set(ip, f);
+}
+setInterval(() => { const now = Date.now(); joinFails.forEach((f, k) => { if (now > f.until) joinFails.delete(k); }); }, 60000).unref();
+process.on('uncaughtException', e => console.error('uncaughtException:', e));
+process.on('unhandledRejection', e => console.error('unhandledRejection:', e));
 
 function send(ws, msg) {
   if (ws && ws.readyState === 1) ws.send(JSON.stringify(msg));
@@ -657,13 +675,25 @@ if (mafia) mafia.setApi({
   destroy: room => { clearTimeout(room.timer); clearTimeout(room.startTimer); rooms.delete(room.code); },
 });
 
-wss.on('connection', ws => {
+wss.on('connection', (ws, req) => {
   ws.room = null; ws.player = null; ws.user = null; ws.lastChat = 0;
+  const ip = ws.ip = ipOf(req);
+  const nConn = (ipConns.get(ip) || 0) + 1;
+  if (nConn > MAX_CONN_PER_IP) { ws.close(1013, 'too many connections'); return; }
+  ipConns.set(ip, nConn);
+  ws.on('close', () => { const n = (ipConns.get(ip) || 1) - 1; if (n <= 0) ipConns.delete(ip); else ipConns.set(ip, n); });
+  let rlT = Date.now(), rlN = 0;
   ws.on('message', raw => {
+    const nw = Date.now();
+    if (nw - rlT >= 1000) { rlT = nw; rlN = 0; }
+    if (++rlN > MSG_PER_SEC) { if (rlN > MSG_PER_SEC * 5) ws.terminate(); return; }
+    try { onMsg(raw); } catch (e) { console.error('message handler error:', e); }
+  });
+  const onMsg = raw => {
     let m;
     try { m = JSON.parse(raw); } catch (e) { return; }
     if (!m || typeof m.t !== 'string') return;
-    const token = typeof m.token === 'string' && m.token.length >= 8 && m.token.length <= 64 ? m.token : null;
+    const token = typeof m.token === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(m.token) ? m.token : null;
     if (handleSocial(ws, m, token)) return;
 
     if (m.t === 'create') {
@@ -694,9 +724,10 @@ wss.on('connection', ws => {
       sendRoom(room);
     } else if (m.t === 'join') {
       if (!token) return;
+      if (joinBlocked(ws.ip)) return send(ws, { t: 'err', msg: 'محاولات كثيرة، انتظر دقيقة وجرّب', fatal: true });
       const code = String(m.code || '').toUpperCase().trim();
       const room = rooms.get(code);
-      if (!room) return send(ws, { t: 'err', msg: 'الغرفة غير موجودة', fatal: true });
+      if (!room) { joinFailed(ws.ip); return send(ws, { t: 'err', msg: 'الغرفة غير موجودة', fatal: true }); }
       if (ws.room && ws.room !== room) detach(ws);
       let player = room.players.find(p => p.token === token);
       if (player && player.left) return send(ws, { t: 'err', msg: 'انسحبت من هذه اللعبة', fatal: true });
@@ -856,7 +887,7 @@ wss.on('connection', ws => {
         r.to.forEach(q => send(q.ws, payload));
       } else broadcast(room, payload);
     }
-  });
+  };
   ws.on('close', () => { detach(ws); goOffline(ws); });
   ws.on('error', () => {});
 });
