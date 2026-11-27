@@ -6,11 +6,15 @@ const { WebSocketServer } = require('ws');
 const sb = require('./snakes_battle');
 let ludo = null;
 try { ludo = require('./ludo'); } catch (e) { console.error('ludo.js غير موجود، لعبة لودو معطلة:', e.message); }
+let mafia = null;
+try { mafia = require('./mafia'); } catch (e) { console.error('mafia.js غير موجود، لعبة المافيا معطلة:', e.message); }
 
 const PORT = process.env.PORT || 3000;
 const SNAKES = { 16: 6, 47: 26, 49: 11, 56: 53, 62: 19, 64: 60, 87: 24, 93: 73, 95: 75, 98: 78 };
 const LADDERS = { 1: 38, 4: 14, 9: 31, 21: 42, 28: 84, 36: 44, 51: 67, 71: 91, 80: 100 };
-const COLORS = ['#ff4d6d', '#2ec4b6', '#ffb703', '#4895ef', '#b388ff', '#ff8fab'];
+const COLORS = ['#ff4d6d', '#2ec4b6', '#ffb703', '#4895ef', '#b388ff', '#ff8fab', '#8ac926', '#ff924c', '#4cc9f0', '#c9a227'];
+const MAFIA_BOT_NAMES = ['حيدر', 'زينب', 'كرار', 'مريم', 'حسن', 'نور', 'عمر', 'سارة', 'علي'];
+const minPlayers = room => (room.game === 'mafia' ? mafia.MIN : 2);
 const EMOJIS = ['😂', '😡', '👏', '😭', '🔥', '👍', '😎', '🙈'];
 const TURN_MS = parseInt(process.env.TURN_MS) || 25000;
 const BOT_MS = parseInt(process.env.BOT_MS) || 1400;
@@ -258,6 +262,8 @@ function sendRoom(room) {
       game: room.game || 'snakes',
       mode: room.mode || 'classic',
       env: room.env || 'mine',
+      min: minPlayers(room),
+      mf: room.game === 'mafia' && mafia ? mafia.view(room, i) : null,
       acts: room.game === 'ludo' && room.mode === 'battle' && room.state === 'play'
         ? { snipe: ludo.snipeTargets(room, room.turn).map(t => ({ i: t.i, tok: t.tok })), trap: ludo.canTrap(room, room.turn) } : (room.game !== 'ludo' && room.mode === 'battle' && room.state === 'play'
         ? { snipe: sb.snipeTargets(room, room.turn).map(t => ({ i: t.i })), trap: sb.canTrap(room, room.turn) } : null),
@@ -301,6 +307,12 @@ function attach(ws, room, player) {
 function removePlayerInGame(room, player, why) {
   const idx = room.players.indexOf(player);
   if (idx < 0) return;
+  if (room.game === 'mafia' && room.state === 'play') {      // المافيا: يبقى مكانه (ميت) حتى ما تتغير الأرقام
+    clearTimeout(player.dcTimer); player.dcTimer = null;
+    if (player.ws) { player.ws.room = null; player.ws.player = null; player.ws = null; }
+    mafia.leave(room, player, why);
+    return;
+  }
   clearTimeout(player.dcTimer); player.dcTimer = null;
   const wasPlaying = room.state === 'play';
   const wasTurn = wasPlaying && room.turn === idx;
@@ -355,7 +367,7 @@ function detach(ws) {
         if (!player.ws && rooms.has(room.code) && room.players.includes(player)) removePlayerInGame(room, player, 'dc');
       }, DC_GRACE);
     }
-    if (room.players[room.turn] === player) nextTurn(room);
+    if (room.game !== 'mafia' && room.players[room.turn] === player) nextTurn(room);
   }
   if (room.state === 'lobby') checkAutoStart(room);
   sendRoom(room);
@@ -366,11 +378,12 @@ const validEnv = v => (ENVS.includes(v) ? v : 'mine');
 const validCls = v => (Number.isInteger(v) && v >= 0 && v <= 3 ? v : null);
 function initGame(room) {
   if (room.game === 'ludo') ludo.init(room);
+  else if (room.game === 'mafia') mafia.init(room);
   else if (room.mode === 'battle') sb.init(room);
   else room.players.forEach(p => (p.pos = 0));
 }
 function startGame(room) {
-  if (!rooms.has(room.code) || room.state !== 'lobby' || room.players.length < 2) return;
+  if (!rooms.has(room.code) || room.state !== 'lobby' || room.players.length < minPlayers(room)) return;
   clearTimeout(room.startTimer); room.startTimer = null; room.startAt = null;
   room.endReason = null;
   room.state = 'play';
@@ -389,12 +402,13 @@ function scheduleStart(room, ms) {
 function checkAutoStart(room) {
   if (!room.pub || room.state !== 'lobby') return;
   const n = room.players.length;
-  if (n < 2) { clearTimeout(room.startTimer); room.startTimer = null; room.startAt = null; return; }
+  if (n < minPlayers(room)) { clearTimeout(room.startTimer); room.startTimer = null; room.startAt = null; return; }
   if (n >= room.max) { if (!room.startAt || room.startAt - Date.now() > 1500) scheduleStart(room, 1500); }
-  else if (!room.startTimer) scheduleStart(room, 8000);
+  else if (!room.startTimer) scheduleStart(room, room.game === 'mafia' ? 15000 : 8000);
 }
 
 function armTimer(room) {
+  if (room.game === 'mafia') return;   // المافيا لها مؤقتاتها الخاصة (mafia.js)
   clearTimeout(room.timer);
   if (room.state !== 'play') return;
   const cur = room.players[room.turn];
@@ -587,6 +601,11 @@ function doRoll(room) {
   sendRoom(room);
 }
 
+if (mafia) mafia.setApi({
+  sendRoom, broadcast, send,
+  destroy: room => { clearTimeout(room.timer); clearTimeout(room.startTimer); rooms.delete(room.code); },
+});
+
 wss.on('connection', ws => {
   ws.room = null; ws.player = null; ws.user = null; ws.lastChat = 0;
   ws.on('message', raw => {
@@ -599,24 +618,27 @@ wss.on('connection', ws => {
     if (m.t === 'create') {
       if (!token) return;
       if (ws.room) detach(ws);
-      const game = m.game === 'ludo' && ludo ? 'ludo' : 'snakes';
-      const max = game === 'ludo' ? 4 : (m.max === 6 ? 6 : 4);
+      const game = m.game === 'ludo' && ludo ? 'ludo' : (m.game === 'mafia' && mafia ? 'mafia' : 'snakes');
+      const max = game === 'ludo' ? 4 : (game === 'mafia' ? mafia.MAX : (m.max === 6 ? 6 : 4));
       const mode = (game === 'ludo' && (m.mode === 'quick' || m.mode === 'battle')) || (game === 'snakes' && m.mode === 'battle') ? m.mode : 'classic';
       const room = { code: makeCode(), max, game, mode, env: game === 'snakes' ? validEnv(m.env) : 'mine', players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
       const player = { token, name: ws.user ? ws.user.name : cleanName(m.name), color: COLORS[0], pos: 0, ws: null, pick: validCls(m.cls) };
       room.players.push(player);
       rooms.set(room.code, room);
-      const nb = Math.max(0, Math.min(max - 1, parseInt(m.bots) || 0));
+      let nb = Math.max(0, Math.min(max - 1, parseInt(m.bots) || 0));
+      if (game === 'mafia' && nb > 0 && nb < mafia.MIN - 1) nb = mafia.MIN - 1;
+      const botNames = game === 'mafia' ? MAFIA_BOT_NAMES.slice().sort(() => Math.random() - 0.5) : null;
       if (nb > 0) {
         room.solo = true;
         for (let k = 0; k < nb; k++) {
-          room.players.push({ token: 'bot' + k, name: '🤖 الجهاز' + (nb > 1 ? ' ' + (k + 1) : ''), color: pickColor(room), pos: 0, ws: null, bot: true });
+          room.players.push({ token: 'bot' + k, name: botNames ? '🤖 ' + botNames[k % botNames.length] : '🤖 الجهاز' + (nb > 1 ? ' ' + (k + 1) : ''), color: pickColor(room), pos: 0, ws: null, bot: true });
         }
         room.state = 'play';
         initGame(room);
         armTimer(room);
       }
       attach(ws, room, player);
+      if (room.game === 'mafia' && room.state === 'play') mafia.resume(room);   // الآن صار اللاعب متصل: شغّل المؤقتات والأجهزة
       sendRoom(room);
     } else if (m.t === 'join') {
       if (!token) return;
@@ -625,13 +647,17 @@ wss.on('connection', ws => {
       if (!room) return send(ws, { t: 'err', msg: 'الغرفة غير موجودة', fatal: true });
       if (ws.room && ws.room !== room) detach(ws);
       let player = room.players.find(p => p.token === token);
+      if (player && player.left) return send(ws, { t: 'err', msg: 'انسحبت من هذه اللعبة', fatal: true });
       if (player) {
         const wasOff = !player.ws;
         attach(ws, room, player);
         if (room.state === 'play') {
           if (wasOff && !room.solo) broadcast(room, { t: 'sys', text: '✅ ' + player.name + ' رجع للعبة' });
-          const cur = room.players[room.turn];
-          if (!cur || (!cur.ws && !cur.bot)) nextTurn(room); else armTimer(room);
+          if (room.game === 'mafia') mafia.resume(room);
+          else {
+            const cur = room.players[room.turn];
+            if (!cur || (!cur.ws && !cur.bot)) nextTurn(room); else armTimer(room);
+          }
         }
       } else {
         if (room.state !== 'lobby') return send(ws, { t: 'err', msg: 'اللعبة بدأت بالفعل أو خرجت منها', fatal: true });
@@ -645,14 +671,14 @@ wss.on('connection', ws => {
     } else if (m.t === 'random') {
       if (!token || !ws.user) return;
       if (ws.room) detach(ws);
-      const rgame = m.game === 'ludo' && ludo ? 'ludo' : 'snakes';
+      const rgame = m.game === 'ludo' && ludo ? 'ludo' : (m.game === 'mafia' && mafia ? 'mafia' : 'snakes');
       const rmode = (rgame === 'ludo' && (m.mode === 'quick' || m.mode === 'battle')) || (rgame === 'snakes' && m.mode === 'battle') ? m.mode : 'classic';
       let room = null;
       for (const r of rooms.values()) {
         if (r.pub && (r.game || 'snakes') === rgame && (r.mode || 'classic') === rmode && r.state === 'lobby' && r.players.length < r.max && !r.players.some(p => p.token === token)) { room = r; break; }
       }
       if (!room) {
-        room = { code: makeCode(), max: 4, game: rgame, mode: rmode, env: rgame === 'snakes' ? validEnv(m.env) : 'mine', pub: true, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
+        room = { code: makeCode(), max: rgame === 'mafia' ? mafia.MAX : 4, game: rgame, mode: rmode, env: rgame === 'snakes' ? validEnv(m.env) : 'mine', pub: true, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
         rooms.set(room.code, room);
       }
       const player = { token, name: ws.user.name, color: pickColor(room), pos: 0, ws: null, pick: validCls(m.cls) };
@@ -677,15 +703,15 @@ wss.on('connection', ws => {
     } else if (m.t === 'start') {
       const room = ws.room;
       if (!room || room.state !== 'lobby' || room.players[room.host] !== ws.player) return;
-      if (room.players.length < 2) return send(ws, { t: 'err', msg: 'تحتاج لاعبين اثنين على الأقل' });
+      if (room.players.length < minPlayers(room)) return send(ws, { t: 'err', msg: room.game === 'mafia' ? 'المافيا تحتاج ' + mafia.MIN + ' لاعبين على الأقل' : 'تحتاج لاعبين اثنين على الأقل' });
       startGame(room);
     } else if (m.t === 'pick') {
       const room = ws.room;
-      if (!room || room.state !== 'lobby' || room.game === 'ludo' || room.mode !== 'battle' || !room.players.includes(ws.player)) return;
+      if (!room || room.state !== 'lobby' || room.game === 'ludo' || room.game === 'mafia' || room.mode !== 'battle' || !room.players.includes(ws.player)) return;
       ws.player.pick = validCls(m.cls); sendRoom(room);
     } else if (m.t === 'env') {
       const room = ws.room;
-      if (!room || room.state !== 'lobby' || room.game === 'ludo' || room.players[room.host] !== ws.player) return;
+      if (!room || room.state !== 'lobby' || room.game === 'ludo' || room.game === 'mafia' || room.players[room.host] !== ws.player) return;
       room.env = validEnv(m.env); sendRoom(room);
     } else if (m.t === 'sshoot') {
       const room = ws.room;
@@ -719,14 +745,19 @@ wss.on('connection', ws => {
       const room = ws.room;
       if (!room || room.game !== 'ludo' || room.players[room.turn] !== ws.player) return;
       ludoMove(room, parseInt(m.tok), m.val == null ? undefined : parseInt(m.val));
+    } else if (m.t === 'mact' || m.t === 'mvote' || m.t === 'mready') {
+      const room = ws.room;
+      if (!room || room.game !== 'mafia' || room.state !== 'play' || !ws.player) return;
+      mafia.handle(room, ws.player, m);
     } else if (m.t === 'roll') {
       const room = ws.room;
-      if (!room || room.state !== 'play' || room.players[room.turn] !== ws.player) return;
+      if (!room || room.state !== 'play' || (room.game || 'snakes') !== 'snakes' || room.players[room.turn] !== ws.player) return;
       doRoll(room);
     } else if (m.t === 'again') {
       const room = ws.room;
       if (!room || room.state !== 'done' || !room.players.includes(ws.player)) return;
       room.endReason = null;
+      if (room.game === 'mafia') mafia.reset(room);
       if (room.solo) {
         room.state = 'play'; room.turn = 0; room.winner = -1;
         initGame(room);
@@ -748,14 +779,21 @@ wss.on('connection', ws => {
       if (now - ws.lastChat < 400) return;
       ws.lastChat = now;
       const i = room.players.indexOf(ws.player);
+      let payload;
       if (m.emoji) {
         if (!EMOJIS.includes(m.emoji)) return;
-        broadcast(room, { t: 'chat', i, text: m.emoji, emoji: true });
+        payload = { t: 'chat', i, text: m.emoji, emoji: true };
       } else {
         const text = String(m.text || '').trim().slice(0, 200);
         if (!text) return;
-        broadcast(room, { t: 'chat', i, text, emoji: false });
+        payload = { t: 'chat', i, text, emoji: false };
       }
+      if (room.game === 'mafia' && room.state === 'play') {
+        const r = mafia.chatRoute(room, ws.player);
+        if (!r) return;                               // بالليل غير المافيا ما يحجون
+        payload.scope = r.scope;
+        r.to.forEach(q => send(q.ws, payload));
+      } else broadcast(room, payload);
     }
   });
   ws.on('close', () => { detach(ws); goOffline(ws); });
