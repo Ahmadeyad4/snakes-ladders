@@ -41,16 +41,17 @@ function move(room, pi, dice, SNAKES, LADDERS) {
   let to = land, rush = false;
   if (!trap) {
     if (SNAKES[land]) {
-      if (p.cls === 1 && !p.shield) { p.shield = true; hits.push({ i: pi, kind: 'shield', dmg: 0 }); }   // درع المدرع: يتجاهل أول لدغة
+      if (p.cls === 1 && !p.shield) { p.shield = true; hits.push({ i: pi, kind: 'shield', dmg: 0, sq: land }); }   // درع المدرع: يتجاهل أول لدغة
       else to = SNAKES[land];
     } else if (LADDERS[land]) to = LADDERS[land];
   }
   p.pos = to;
-  if (trap) hits.push(hit(room, pi, 1, 'trap'));
+  if (trap) { const h = hit(room, pi, 1, 'trap'); h.sq = land; hits.push(h); }
   else if (to < 100 && !isSafe(to)) {                 // الوقوف على عدو = ضربة فورية (المندفع ضررين برمية 4+)
     room.players.forEach((q, qi) => {
       if (qi === pi || q.pos !== to) return;
       const h = hit(room, qi, (p.cls === 0 && dice >= 4) ? 2 : 1, 'melee');
+      h.sq = to;
       hits.push(h);
       if (h.killed && p.cls === 0) rush = true;       // المندفع يقتل = رمية إضافية
     });
@@ -71,7 +72,10 @@ function snipeTargets(room, pi) {
 function snipe(room, pi, qi) {
   if (!snipeTargets(room, pi).some(t => t.i === qi)) return null;
   room.ts.shot = true;
-  return hit(room, qi, 1, 'snipe');
+  const from = room.players[pi].pos, sq = room.players[qi].pos;   // أماكنهم قبل الضربة (للتأثيرات)
+  const h = hit(room, qi, 1, 'snipe');
+  h.from = from; h.sq = sq;
+  return h;
 }
 
 // المهندس: ينصب فخ مخفي بخانته (مو ملجأ). أقصى فخين، والأقدم يختفي.

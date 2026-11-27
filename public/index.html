@@ -242,6 +242,23 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
 #lWrap.quake{animation:quake .38s linear}
 @keyframes quake{0%,100%{transform:none}20%{transform:translate(-5px,3px)}40%{transform:translate(5px,-3px)}60%{transform:translate(-3px,-2px)}80%{transform:translate(3px,2px)}}
 .war-vig{pointer-events:none}
+/* ===== وضع المعركة بحية ودرج ===== */
+#sStage{position:absolute;inset:0;transform-origin:0 0;transition:transform .6s cubic-bezier(.2,.8,.2,1);will-change:transform}
+#boardWrap.zoomed{overflow:hidden}
+#boardWrap.war{container-type:inline-size}
+#boardWrap.war::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:8;background:radial-gradient(circle at 50% 50%,transparent 52%,rgba(0,0,0,.45))}
+#warDecor{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none}
+#boardWrap.war #warDecor{display:block}
+#sFx{position:absolute;inset:0;pointer-events:none;z-index:9}
+#sTraps{position:absolute;inset:0;pointer-events:none;z-index:2}
+.tok.bt{width:8.2%;height:8.2%;border:0;background:transparent!important;box-shadow:none!important;border-radius:0;font-size:3cqw}
+.tok.bt svg{width:100%;height:100%;display:block;overflow:visible;filter:drop-shadow(0 1.5px 1.5px rgba(0,0,0,.55));pointer-events:none}
+.tok.bt.me svg{filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 4px #fff)}
+.tok .hp{position:absolute;left:50%;bottom:-28%;transform:translateX(-50%);font-size:.8em;color:#ff4d6d;text-shadow:0 0 2px #000,0 0 2px #000;white-space:nowrap;pointer-events:none;letter-spacing:-1px}
+.tok.hurt svg{animation:hurtk .6s ease-out}
+#boardWrap.quake{animation:quake .38s linear}
+.burst.amb b{font-size:6cqw;opacity:.4;animation-duration:2s;filter:none}
+@media (prefers-reduced-motion:reduce){#sStage{transition:none}#boardWrap.quake{animation:none}}
 @media (prefers-reduced-motion:reduce){#lStage{transition:none}#lWrap.quake{animation:none}}
 </style>
 </head>
@@ -313,11 +330,14 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
   <section id="game" class="screen">
     <div id="top"><span id="gcode"></span><button id="themeBtn2" data-themes aria-label="المظهر">🎨</button><button class="muteBtn" aria-label="الصوت">🔊</button><button data-leave>خروج</button></div>
     <div id="chips"></div>
-    <div id="boardWrap">
+    <div id="boardWrap"><div id="sStage">
       <div id="board"></div>
+      <svg id="warDecor" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
       <svg id="lines" viewBox="0 0 100 100" preserveAspectRatio="none"></svg>
       <div id="toks"></div>
-    </div>
+      <div id="sTraps"></div>
+      <div id="sFx"></div>
+    </div></div>
     <div id="sbAct"></div>
     <div id="ctrl">
       <div id="dice">⚀</div>
@@ -536,7 +556,7 @@ function fitBoard(){
   const ids=L?['lTop','lChips','lCtrl','lWrap']:['top','chips','ctrl','boardWrap'];
   const vw=document.documentElement.clientWidth,vh=window.innerHeight,land=vw/vh>=1.25;
   const cs=getComputedStyle(document.body),pad=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
-  let fixed=$(ids[0]).offsetHeight+$(ids[1]).offsetHeight+$(ids[2]).offsetHeight+24+pad;
+  let fixed=$(ids[0]).offsetHeight+$(ids[1]).offsetHeight+$(ids[2]).offsetHeight+24+pad+(L?0:$('sbAct').offsetHeight);
   let size;
   if(land){size=Math.min(vw-Math.min(340,vw*.3)-24,vh-fixed)}
   else{size=Math.min(vw-8,vh-fixed-(L?130:150))}
@@ -578,7 +598,8 @@ async function handle(m){
     const i=m.i;
     if(m.land===m.from){toast('تحتاج الرقم المضبوط للوصول إلى 100');sfx.bad();await sleep(500)}
     else{for(let s=m.from+1;s<=m.land;s++){disp[i]=s;placeToks();hop(i);sfx.step(s-m.from);await sleep(190)}}
-    for(const h of (m.hits||[])){toast(hitMsg(h));sfx.bad();await sleep(900)}
+    for(const h of (m.hits||[]))await warHit(h);
+    if(m.hits&&m.hits.length&&isWar()){sZoomReset();await sleep(450)}
     if(m.to!==m.land){
       const down=m.to<m.land,died=(m.hits||[]).some(h=>h.i===i&&h.killed);
       if(!died){toast(down?'🐍 لدغتك حية!':'🪜 صعدت درج!');
@@ -587,7 +608,13 @@ async function handle(m){
     }
     animating=false;render();
   }else if(m.t==='sbhit'){
-    toast(hitMsg(m.hit));sfx.bad();
+    if(isWar()&&m.hit.sq!=null){
+      animating=true;render();
+      const a=sPct(m.hit.from),b=sPct(m.hit.sq),dd=Math.hypot(a[0]-b[0],a[1]-b[1]);
+      sZoom([(a[0]+b[0])/2,(a[1]+b[1])/2],dd<25?2.2:dd<45?1.7:1.4);await sleep(600);
+      sTracer(a,b);sfx.shot();await sleep(180);sBurst(b,m.hit.killed?'kill':'snipe');sHurt(m.hit.i);sQuake();sfx.hit(m.hit);
+      toast(hitMsg(m.hit));await sleep(900);sZoomReset();await sleep(450);animating=false;render();
+    }else{toast(hitMsg(m.hit));sfx.bad()}
   }else if(m.t==='lroll'){
     await ludoRollAnim(m);
   }else if(m.t==='lmove'){
@@ -648,6 +675,9 @@ function placeToks(){
     if(!t){t=document.createElement('div');t.className='tok';box.appendChild(t)}
     const n=disp[i]||0,pt=n?xy(n):{x:-6,y:105+i*0};
     const ox=((i%3)-1)*2.4,oy=(Math.floor(i/3)-.5)*2.6;
+    if(isWar()&&p.cls!=null){const k=p.cls+p.color;if(t.dataset.k!==k){t.dataset.k=k;t.innerHTML=soldierSVG(p.cls,p.color)+'<span class="hp"></span>'}
+      t.querySelector('.hp').textContent='♥'.repeat(Math.max(0,p.hp));t.classList.add('bt')}
+    else if(t.classList.contains('bt')){t.classList.remove('bt');t.innerHTML='';delete t.dataset.k}
     t.style.background=p.color;t.classList.toggle('me',i===room.you);
     t.style.left=(n?pt.x+ox:3+i*5)+'%';t.style.top=(n?pt.y+oy:97)+'%';
   });
@@ -693,6 +723,7 @@ function render(){
     const d=document.createElement('span');d.className='dot';d.style.background=p.color;
     const bt=room.mode==='battle'&&p.cls!=null?' '+SBC[p.cls]+'♥'.repeat(Math.max(0,p.hp)):'';c.append(d,document.createTextNode(p.name+bt+(p.online?'':' ⚠️')));chips.appendChild(c);
   });
+  $('boardWrap').classList.toggle('war',isWar());if(isWar())drawWarBoard();
   placeToks();fitBoard();
   const act=room.state==='play'&&room.phase==='act';
   const mine=room.state==='play'&&room.turn===room.you&&!animating&&!act;
@@ -736,11 +767,53 @@ function syncEnv(){
   if(tag===envApplied)return;
   envApplied=tag;
   if(want)applyTheme(want,true);else if(effKey)applyTheme(themeKey)}
+// ---------- تأثيرات المعركة بحية ودرج ----------
+const isWar=()=>!!room&&room.game!=='ludo'&&room.mode==='battle';
+const sPct=n=>{const p=xy(Math.max(1,n||1));return [p.x,p.y]};
+let szt=null,warDrawn=false;
+function sZoom(pt,s){clearTimeout(szt);$('boardWrap').classList.add('zoomed');sfx.whoosh();
+  const T=[pt[0]/100,pt[1]/100].map(v=>Math.min(0,Math.max(1-s,.5-v*s))*100);
+  $('sStage').style.transform='translate('+T[0].toFixed(2)+'%,'+T[1].toFixed(2)+'%) scale('+s+')'}
+function sZoomReset(){$('sStage').style.transform='';clearTimeout(szt);szt=setTimeout(()=>$('boardWrap').classList.remove('zoomed'),700)}
+function sQuake(){const w=$('boardWrap');w.classList.remove('quake');void w.offsetWidth;w.classList.add('quake');setTimeout(()=>w.classList.remove('quake'),420)}
+function sBurst(pt,kind){
+  const d=document.createElement('div');d.className='burst'+(kind==='amb'?' amb':'');
+  d.style.left=pt[0]+'%';d.style.top=pt[1]+'%';
+  const em={kill:'💀',mine:'💥',snipe:'🎯',shield:'🛡️',hit:'💥',amb:'💨'}[kind]||'💥';
+  let h=kind==='amb'?'<b>'+em+'</b>':'<i></i><b>'+em+'</b>';
+  if(kind!=='amb')for(let k=0;k<10;k++){const a=k/10*6.283+Math.random()*.4,r=4+Math.random()*4;h+='<u style="--dx:'+(Math.cos(a)*r).toFixed(1)+'cqw;--dy:'+(Math.sin(a)*r).toFixed(1)+'cqw"></u>'}
+  d.innerHTML=h;$('sFx').appendChild(d);setTimeout(()=>d.remove(),kind==='amb'?2100:950)}
+function sTracer(a,b){const d=document.createElement('div');
+  d.innerHTML='<svg class="trc" viewBox="0 0 100 100" preserveAspectRatio="none"><line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="#fff3b0" stroke-width="1.1" stroke-linecap="round"/><line x1="'+a[0]+'" y1="'+a[1]+'" x2="'+b[0]+'" y2="'+b[1]+'" stroke="#ff9a1f" stroke-width=".4" stroke-linecap="round"/></svg>';
+  $('sFx').appendChild(d);setTimeout(()=>d.remove(),650)}
+function sHurt(i){const e=$('toks').children[i];if(!e)return;e.classList.remove('hurt');void e.offsetWidth;e.classList.add('hurt');setTimeout(()=>e.classList.remove('hurt'),650)}
+async function warHit(h){
+  if(!isWar()||h.sq==null){toast(hitMsg(h));sfx.bad();await sleep(900);return}
+  const pt=sPct(h.sq);sZoom(pt,2.4);await sleep(560);
+  sBurst(pt,h.kind==='shield'?'shield':h.kind==='trap'?'mine':h.killed?'kill':'hit');sHurt(h.i);sQuake();
+  if(h.kind==='trap'){sfx.punch();if(h.killed)setTimeout(()=>sfx.kill(),350)}else if(h.kind==='shield')sfx.clang();else sfx.hit(h);
+  toast(hitMsg(h));await sleep(1000)}
+// أرضية ساحة حرب: طين + حفر قنابل + أكياس رمل على الملاجئ (مضاعفات 10) + أسلاك شائكة
+function drawWarBoard(){
+  if(warDrawn)return;warDrawn=true;
+  let o='<defs><filter id="sMud" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".045" numOctaves="3" seed="7"/><feColorMatrix values="0 0 0 0 .16  0 0 0 0 .11  0 0 0 0 .05  0 0 0 1.5 -.55"/></filter>'
+   +'<radialGradient id="sCr"><stop offset="0" stop-color="#17110a"/><stop offset=".55" stop-color="#2b2011"/><stop offset=".78" stop-color="#54432a"/><stop offset="1" stop-color="#54432a" stop-opacity="0"/></radialGradient></defs>'
+   +'<rect width="100" height="100" filter="url(#sMud)" opacity=".7"/>';
+  [[24,8,2.4],[61,14,2],[88,33,2.6],[12,47,2.2],[47,52,2.4],[75,64,2],[30,78,2.6],[90,86,2.4],[8,92,2.8],[55,93,1.8],[67,36,1.8],[38,28,2]]
+    .forEach(([x,y,r])=>{o+='<circle cx="'+x+'" cy="'+y+'" r="'+(r*1.35)+'" fill="url(#sCr)" opacity=".6"/>'});
+  for(let n=10;n<100;n+=10){const p=xy(n),x=p.x,y=p.y;
+    o+='<g stroke="#6f5f35" stroke-width=".25" fill="#cbb582"><rect x="'+(x-4.4)+'" y="'+(y+2)+'" width="3.8" height="2.2" rx="1"/><rect x="'+(x+.6)+'" y="'+(y+2)+'" width="3.8" height="2.2" rx="1"/><rect x="'+(x-1.9)+'" y="'+(y-.1)+'" width="3.8" height="2.2" rx="1"/></g>'
+     +'<text x="'+(x+3.2)+'" y="'+(y-2.2)+'" text-anchor="middle" font-size="3" fill="#3a2f12">★</text>'}
+  [.9,99.1].forEach(y=>{let d='M0,'+y;for(let x=0;x<100;x+=3)d+=' l1.5,-.8 l1.5,.8';o+='<path d="'+d+'" fill="none" stroke="#1c1c1c" stroke-width=".35" opacity=".8"/>'});
+  $('warDecor').innerHTML=o}
+setInterval(()=>{if(!isWar()||room.state!=='play'||animating||document.hidden||!$('game').classList.contains('on'))return;
+  sBurst(sPct(1+Math.floor(Math.random()*99)),'amb')},7000);
 function renderSbAct(){
-  const sa=$('sbAct');if(!sa)return;sa.innerHTML='';
+  const sa=$('sbAct');if(!sa)return;sa.innerHTML='';$('sTraps').innerHTML='';
   if(!room||room.game==='ludo'||room.mode!=='battle'||room.state!=='play')return;
   const me=room.players[room.you];
   if(me&&me.cls!=null){const s=document.createElement('span');s.textContent=SBC[me.cls]+' '+SBN[me.cls]+' '+'♥'.repeat(Math.max(0,me.hp))+((me.traps&&me.traps.length)?' | 🪤 '+me.traps.join('، '):'');sa.appendChild(s)}
+  ((me&&me.traps)||[]).forEach(n=>{const p=xy(n),d=document.createElement('div');d.className='ltrap';d.textContent='🪤';d.style.left=p.x+'%';d.style.top=p.y+'%';$('sTraps').appendChild(d)});
   if(room.turn===room.you&&room.phase==='act'&&!animating){
     const mk=(t,f,g)=>{const b=document.createElement('button');b.className='btn'+(g?' alt':'');b.textContent=t;b.onclick=f;sa.appendChild(b)};
     ((room.acts&&room.acts.snipe)||[]).forEach(t=>mk('🎯 قنص '+room.players[t.i].name,()=>tx({t:'sshoot',i:t.i})));
@@ -1268,7 +1341,7 @@ function renderThemes(){
     box.appendChild(b);
   });
 }
-document.querySelectorAll('[data-themes]').forEach(b=>b.onclick=()=>{renderThemes();$('themep').classList.add('on')});
+document.querySelectorAll('[data-themes]').forEach(b=>b.onclick=()=>{if(room&&effKey){toast('🔒 الجو مثبّت من صاحب الغرفة');return}renderThemes();$('themep').classList.add('on')});
 applyTheme(themeKey);
 </script>
 </body>
