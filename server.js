@@ -415,7 +415,7 @@ function autoAct(room) {
 }
 
 function nextTurn(room) {
-  room.phase = 'roll'; room.sixes = 0; room.legal = [];
+  room.phase = 'roll'; room.sixes = 0; room.extra = false; room.legal = [];
   room.legalBy = {}; room.pend = []; room.rollsLeft = 1;
   if (!room.players.some(p => p.ws)) { clearTimeout(room.timer); return; }
   const n = room.players.length;
@@ -517,12 +517,13 @@ function ludoMove(room, ti, val) {
 function sbRoll(room) {
   const i = room.turn, dice = 1 + Math.floor(Math.random() * 6);
   const r = sb.move(room, i, dice, SNAKES, LADDERS);
-  broadcast(room, { t: 'move', i, dice, from: r.from, land: r.land, to: r.to, hits: r.hits, trap: r.trap });
+  const extra = !!r.rush && r.to !== 100;       // السته ما تعطي رمية إضافية؛ فقط قتل المندفع
+  broadcast(room, { t: 'move', i, dice, from: r.from, land: r.land, to: r.to, hits: r.hits, trap: r.trap, extra });
   if (r.to === 100) {
     room.state = 'done'; room.winner = i; room.endReason = 'win';
     clearTimeout(room.timer); sendRoom(room); return;
   }
-  room.extra = dice === 6 || r.rush;            // السته أو قتل المندفع = رمية إضافية
+  room.extra = extra;                           // قتل المندفع = رمية إضافية
   if (sb.hasActs(room, i)) { room.phase = 'act'; armTimer(room); } else sbEnd(room);
   sendRoom(room);
 }
@@ -574,8 +575,6 @@ function doRoll(room) {
     room.winner = i;
     room.endReason = 'win';
     clearTimeout(room.timer);
-  } else if (dice === 6) {
-    armTimer(room); // رمية إضافية
   } else {
     nextTurn(room);
   }

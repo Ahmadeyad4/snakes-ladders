@@ -172,9 +172,27 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
 .pk{display:flex;flex-wrap:wrap;gap:6px}
 .pbtn{flex:1 1 22%;border:2px solid transparent;border-radius:12px;background:var(--panel2);color:var(--text);font-size:16px;font-weight:800;padding:8px 4px;display:flex;flex-direction:column;align-items:center;gap:2px}
 .pbtn small{font-size:11px;font-weight:600;opacity:.85}
+.pbtn small.pf{font-size:10px;font-weight:700;color:var(--gold);opacity:1;line-height:1.2;text-align:center}
 .pbtn.on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
-#sbAct{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;align-items:center;margin:6px 0;font-size:14px;font-weight:700}
+#sbAct{display:none;flex:none;flex-wrap:nowrap;gap:8px;justify-content:flex-start;align-items:center;margin:4px 0;height:46px;overflow-x:auto;overflow-y:hidden;font-size:14px;font-weight:700;white-space:nowrap;scrollbar-width:none}
+#sbAct::-webkit-scrollbar{display:none}
+#sbAct.on{display:flex}
+#sbAct>*{flex:none}
 #sbAct .btn{padding:9px 12px;font-size:14px}
+#top,#chips,#ctrl,#lTop,#lChips,#lCtrl{flex:none}
+#screens{z-index:2}
+#ctrl.extra #rollBtn:not(.wait){animation:xpulse .9s ease-in-out infinite}
+@keyframes xpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,207,74,.8)}50%{box-shadow:0 0 0 8px rgba(255,207,74,0)}}
+/* قائمة منسدلة (خانة وحدة) */
+.dd{position:relative;width:100%}
+.ddb{width:100%;display:flex;justify-content:space-between;align-items:center;gap:8px;background:var(--panel2);border:2px solid var(--gold);border-radius:12px;padding:12px 14px;font-weight:800;font-size:16px;text-align:start}
+.ddb i{font-style:normal;opacity:.8;transition:transform .15s}
+.dd.open .ddb i{transform:rotate(180deg)}
+.ddl{display:none;position:absolute;inset-inline:0;top:calc(100% + 4px);background:var(--panel);border:2px solid var(--panel2);border-radius:12px;max-height:40dvh;overflow-y:auto;z-index:12;box-shadow:0 8px 22px #000a}
+.dd.open .ddl{display:block}
+.ddi{display:block;width:100%;text-align:start;padding:11px 14px;background:transparent;font-weight:700;font-size:16px}
+.ddi+.ddi{border-top:1px solid var(--panel2)}
+.ddi.on{background:var(--panel2);color:var(--gold)}
 .mbtn{flex:1;border:2px solid transparent;border-radius:14px;background:var(--panel2);color:var(--text);font:inherit;font-size:17px;font-weight:800;padding:10px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
 .mbtn small{font-size:12px;font-weight:600;opacity:.8}
 .mbtn.on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
@@ -537,13 +555,13 @@ function drawArt(){
 
 // ---------- الحالة ----------
 let social=null,pendingInvite=null,winShown=false,inviteQueue=[],curGame='snakes',curMode='classic',ldisp=[],selVal=null,snipeMode=false,ludoCanRoll=false;
-let ws,room=null,disp=[],animating=false,queue=Promise.resolve(),wantRoom=null,retry=null;
+let extraFor=-1,ws,room=null,disp=[],animating=false,queue=Promise.resolve(),wantRoom=null,retry=null;
 
 function connect(){
   const proto=location.protocol==='https:'?'wss':'ws';
   ws=new WebSocket(proto+'://'+location.host);
   ws.onopen=()=>{ $('net').classList.remove('on'); tx({t:'hello',name:$('nameIn').value.trim()}); if(wantRoom) tx({t:'join',code:wantRoom,name:myName()}); };
-  ws.onmessage=e=>{const m=JSON.parse(e.data);queue=queue.then(()=>handle(m)).catch(console.error)};
+  ws.onmessage=e=>{const m=JSON.parse(e.data);queue=queue.then(()=>handle(m)).catch(err=>{console.error(err);animating=false;try{render()}catch(_){}})};
   ws.onclose=()=>{$('net').classList.add('on');clearTimeout(retry);retry=setTimeout(connect,1500)};
 }
 function tx(o){o.token=token;if(ws&&ws.readyState===1)ws.send(JSON.stringify(o));else toast('لا يوجد اتصال، انتظر...')}
@@ -582,6 +600,7 @@ async function handle(m){
     disp=m.players.map(p=>p.pos);
     ldisp=m.players.map(p=>p.tokens?p.tokens.slice():[-1,-1,-1,-1]);
     selVal=null;snipeMode=false;zoomReset();
+    if(m.turn!==m.you||m.state!=='play')extraFor=-1;
     if(m.state==='play'&&m.turn===m.you&&!wasMine&&!animating)sfx.turn();
     m._dl=m.startIn!=null?Date.now()+m.startIn:null;
     if(m.state==='lobby'){
@@ -606,7 +625,9 @@ async function handle(m){
       if(down)sfx.snake();else sfx.ladder()}
       await sleep(350);await slide(i,m.to);
     }
+    extraFor=m.extra?m.i:-1;
     animating=false;render();
+    if(m.extra&&room){toast(m.i===room.you?'🗡️ قتلت عدو! عندك رمية ثانية':'🗡️ '+(room.players[m.i]?room.players[m.i].name:'')+' قتل عدو وياخذ رمية ثانية')}
   }else if(m.t==='sbhit'){
     if(isWar()&&m.hit.sq!=null){
       animating=true;render();
@@ -724,34 +745,48 @@ function render(){
     const bt=room.mode==='battle'&&p.cls!=null?' '+SBC[p.cls]+'♥'.repeat(Math.max(0,p.hp)):'';c.append(d,document.createTextNode(p.name+bt+(p.online?'':' ⚠️')));chips.appendChild(c);
   });
   $('boardWrap').classList.toggle('war',isWar());if(isWar())drawWarBoard();
-  placeToks();fitBoard();
+  renderSbAct();placeToks();fitBoard();
   const act=room.state==='play'&&room.phase==='act';
   const mine=room.state==='play'&&room.turn===room.you&&!animating&&!act;
   const rb=$('rollBtn');rb.disabled=!mine;rb.classList.toggle('wait',!mine);
   rb.textContent=room.state!=='play'?'انتهت اللعبة':mine?'ارمِ النرد 🎲':animating?'...':act&&room.turn===room.you?'⚔️ استعمل قدرتك':'دور '+room.players[room.turn].name;
-  renderSbAct();
+  if(mine&&extraFor===room.you){rb.textContent='🎲 رمية إضافية! ارمِ';$('ctrl').classList.add('extra')}else $('ctrl').classList.remove('extra');
   updateEnd();
 }
-const SBC=['🗡️','🛡️','🎯','🪤'],SBN=['المندفع','المدرع','القناص','المهندس'];
+const SBC=['🗡️','🛡️','🎯','🪤'],SBN=['المندفع','المدرع','القناص','المهندس'],SBF=['ضربة ×2','درع + 3♥','يقنص بعيد','فخ مخفي'];
 function hitMsg(h){const n=room&&room.players[h.i]?room.players[h.i].name:'';
   if(h.kind==='shield')return '🛡️ درع '+n+' صدّ لدغة الحية!';
   if(h.dmg===0)return '🛡️ '+n+' صدّ الضربة';
   return (h.kind==='trap'?'🪤 فخ! ':h.kind==='snipe'?'🎯 قنص! ':'⚔️ ')+n+(h.killed?' ☠️ رجع لآخر ملجأ':' −'+h.dmg+'♥ (باقي '+h.hp+')')}
 var myCls=null,myEnv='mine',pickSent='';
-const CLS_OPTS=[[null,'🎲','عشوائي'],[0,'🗡️','مندفع'],[1,'🛡️','مدرع'],[2,'🎯','قناص'],[3,'🪤','مهندس']];
+const CLS_OPTS=[[null,'🎲','عشوائي','نوع مفاجئ'],[0,'🗡️','مندفع','ضربة ×2'],[1,'🛡️','مدرع','درع + 3♥'],[2,'🎯','قناص','يقنص بعيد'],[3,'🪤','مهندس','فخ مخفي']];
 const ENV_OPTS=[['mine','🎨','مظهري'],['classic','🎲','كلاسيك'],['desert','🏜️','صحراء'],['spring','🌸','ربيع'],['snow','❄️','ثلج'],['rain','🌧️','مطر'],['night','🌌','ليل']];
 function pickRow(box,title,opts,cur,fn){
   const h=document.createElement('div');h.className='pkt';h.textContent=title;box.appendChild(h);
   const r=document.createElement('div');r.className='pk';
   opts.forEach(o=>{const b=document.createElement('button');b.className='pbtn'+(o[0]===cur?' on':'');
     const s=document.createElement('small');s.textContent=o[2];b.append(document.createTextNode(o[1]),s);
+    if(o[3]){const f=document.createElement('small');f.className='pf';f.textContent=o[3];b.appendChild(f)}
     b.onclick=()=>fn(o[0]);r.appendChild(b)});
   box.appendChild(r)}
+function closeDrops(){document.querySelectorAll('.dd.open').forEach(d=>d.classList.remove('open'))}
+document.addEventListener('click',closeDrops);
+function pickDrop(box,title,opts,cur,fn){
+  const h=document.createElement('div');h.className='pkt';h.textContent=title;box.appendChild(h);
+  const w=document.createElement('div');w.className='dd';
+  const c=opts.find(o=>o[0]===cur)||opts[0];
+  const b=document.createElement('button');b.type='button';b.className='ddb';
+  const t=document.createElement('span');t.textContent=c[1]+' '+c[2];const ar=document.createElement('i');ar.textContent='▾';b.append(t,ar);
+  const l=document.createElement('div');l.className='ddl';
+  opts.forEach(o=>{const it=document.createElement('button');it.type='button';it.className='ddi'+(o[0]===c[0]?' on':'');it.textContent=o[1]+' '+o[2];
+    it.onclick=e=>{e.stopPropagation();w.classList.remove('open');fn(o[0])};l.appendChild(it)});
+  b.onclick=e=>{e.stopPropagation();const was=w.classList.contains('open');closeDrops();if(!was)w.classList.add('open')};
+  w.append(b,l);box.appendChild(w)}
 function renderMenuPick(){
   const box=$('sbPick');if(!box)return;box.innerHTML='';
   if(curGame!=='snakes')return;
   if(curMode==='battle')pickRow(box,'⚔️ اختر نوع جنديك',CLS_OPTS,myCls,v=>{myCls=v;renderMenuPick()});
-  pickRow(box,'🌍 اختر جو اللعب',ENV_OPTS,myEnv,v=>{myEnv=v;renderMenuPick()})}
+  pickDrop(box,'🌍 المظهر (جو اللعب)',ENV_OPTS,myEnv,v=>{myEnv=v;renderMenuPick()})}
 function renderLobPick(){
   const box=$('lobPick');if(!box)return;box.innerHTML='';
   if(!room||room.game==='ludo'||room.state!=='lobby')return;
@@ -759,7 +794,7 @@ function renderLobPick(){
   if(room.mode==='battle'){
     if(me&&cur!==myCls&&pickSent!==room.code+':'+myCls){pickSent=room.code+':'+myCls;tx({t:'pick',cls:myCls})}
     pickRow(box,'⚔️ اختر نوع جنديك',CLS_OPTS,myCls,v=>{myCls=v;pickSent=room.code+':'+v;tx({t:'pick',cls:v});renderLobPick()})}
-  if(room.host===room.you&&!room.pub)pickRow(box,'🌍 جو اللعب',ENV_OPTS,room.env||'mine',v=>{myEnv=v;tx({t:'env',env:v})});
+  if(room.host===room.you&&!room.pub)pickDrop(box,'🌍 المظهر (جو اللعب)',ENV_OPTS,room.env||'mine',v=>{myEnv=v;tx({t:'env',env:v})});
   else if(room.env&&room.env!=='mine'){const e=ENV_OPTS.find(o=>o[0]===room.env);if(e){const d=document.createElement('div');d.className='pkt';d.textContent='🌍 جو اللعب: '+e[1]+' '+e[2];box.appendChild(d)}}}
 function syncEnv(){
   const want=room&&room.game!=='ludo'&&room.env&&room.env!=='mine'&&THEMES[room.env]?room.env:null;
@@ -810,9 +845,10 @@ setInterval(()=>{if(!isWar()||room.state!=='play'||animating||document.hidden||!
   sBurst(sPct(1+Math.floor(Math.random()*99)),'amb')},7000);
 function renderSbAct(){
   const sa=$('sbAct');if(!sa)return;sa.innerHTML='';$('sTraps').innerHTML='';
-  if(!room||room.game==='ludo'||room.mode!=='battle'||room.state!=='play')return;
+  const on=!!room&&room.game!=='ludo'&&room.mode==='battle'&&room.state==='play';sa.classList.toggle('on',on);
+  if(!on)return;
   const me=room.players[room.you];
-  if(me&&me.cls!=null){const s=document.createElement('span');s.textContent=SBC[me.cls]+' '+SBN[me.cls]+' '+'♥'.repeat(Math.max(0,me.hp))+((me.traps&&me.traps.length)?' | 🪤 '+me.traps.join('، '):'');sa.appendChild(s)}
+  if(me&&me.cls!=null){const s=document.createElement('span');s.textContent=SBC[me.cls]+' '+SBN[me.cls]+' ('+SBF[me.cls]+') '+'♥'.repeat(Math.max(0,me.hp))+((me.traps&&me.traps.length)?' | 🪤 '+me.traps.join('، '):'');sa.appendChild(s)}
   ((me&&me.traps)||[]).forEach(n=>{const p=xy(n),d=document.createElement('div');d.className='ltrap';d.textContent='🪤';d.style.left=p.x+'%';d.style.top=p.y+'%';$('sTraps').appendChild(d)});
   if(room.turn===room.you&&room.phase==='act'&&!animating){
     const mk=(t,f,g)=>{const b=document.createElement('button');b.className='btn'+(g?' alt':'');b.textContent=t;b.onclick=f;sa.appendChild(b)};
@@ -1260,7 +1296,7 @@ $('invYes').onclick=()=>{
   wantRoom=inv.code;tx({t:'join',code:inv.code,name:myName()});
 };
 $('startBtn').onclick=()=>tx({t:'start'});
-$('rollBtn').onclick=()=>tx({t:'roll'});
+$('rollBtn').onclick=()=>{extraFor=-1;tx({t:'roll'})};
 $('againBtn').onclick=()=>tx({t:'again'});
 document.querySelectorAll('[data-leave]').forEach(b=>b.onclick=()=>{if(room&&room.state==='play'&&!confirm('الخروج يعني انسحابك من اللعبة. متأكد؟'))return;tx({t:'leave'});wantRoom=null;room=null;inviteQueue=[];$('log').innerHTML='';$('win').classList.remove('on');openMenu(curGame)});
 const em=$('emojis');EMOJIS.forEach(e=>{const b=document.createElement('button');b.textContent=e;b.onclick=()=>tx({t:'chat',emoji:e});em.appendChild(b)});
