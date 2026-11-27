@@ -1,11 +1,15 @@
 // لعبة المحيبس (لعبة عراقية تراثية) لكعدة بلي
 // من 2 إلى 4 لاعبين: 1 ضد 1، أو 2 ضد 1، أو 2 ضد 2. عدد القبضات متساوي بين الفريقين (اللاعب الوحيد بفريق من اثنين يحمل 4 قبضات).
 // فريقين (حسب رقم اللاعب: زوجي = أحمر، فردي = أزرق). فريق يخفي المحبس بإحدى قبضات أعضائه، والفريق الثاني يدور عليه.
+// مجموع قبضات الفريق المخفّي = 2 × حجم الفريق الأكبر، وبحد أدنى 4 (حتى لا يصير 1 ضد 1 رمية عملة).
+// زملاء الباحث (غير الباحث نفسه) يكدرون "يقترحون" قبضة (hsug) تظهر للباحث وفريقه فقط.
 // الباحث: "طلّع" = يطلب فتح قبضة يظنها فاضية (إذا طلعت فيها المحبس يخسر الجولة)، "بات" = يقول المحبس هنا.
 // المراحل: تعارف -> إخفاء -> بحث -> نتيجة -> إخفاء ... أول فريق يوصل 5 نقاط يفوز.
 'use strict';
 
 const MIN = 2, MAX = 4, WIN = 5;
+// عبارات سريعة تراثية (تنرسل بالدردشة كفقاعة فوق اللاعب). لازم تطابق القائمة بالواجهة.
+const PHRASES = ['بات!', 'طلّع إيدك!', 'ما بيها شي 😏', 'المحبس بيها!', 'لا تصدّق هزّاتنا 😂', 'عفية! 👏'];
 // MHEIBES_SPEED=20 يسرّع كل المراحل (للاختبار فقط)
 const SPEED = Math.max(0.1, parseFloat(process.env.MHEIBES_SPEED) || 1);
 const T = { intro: 5000, hide: 22000, seek: 45000, step: 25000, result: 5500 };
@@ -25,9 +29,10 @@ const narr = (room, text, kind) => api.broadcast(room, { t: 'hnarr', text, kind:
 // ---------- أدوات القبضات ----------
 // رقم القبضة = رقم اللاعب * 4 + رقم القبضة عنده (0..3). عدد قبضات كل فريق = 2 × حجم الفريق الأكبر
 const members = (room, t) => room.players.map((p, i) => (teamOf(i) === t && !p.left ? i : -1)).filter(i => i >= 0);
+const totalFists = room => Math.max(4, 2 * Math.max(members(room, 0).length, members(room, 1).length));
 const perPlayer = (room, t) => {
   const n = members(room, t).length;
-  return n ? (2 * Math.max(members(room, 0).length, members(room, 1).length)) / n : 0;
+  return n ? totalFists(room) / n : 0;
 };
 const fistsOf = (room, t) => {
   const per = perPlayer(room, t);
@@ -67,7 +72,7 @@ function init(room) {
   room.mh = {
     phase: 'intro', round: 0, seq: 0, deadline: 0, total: 0, botT: [], fxT: [], closing: false, winner: null,
     score: [0, 0], hiding: Math.random() < 0.5 ? 0 : 1, next: null, hider: -1, searcher: -1,
-    ring: -1, opened: [], tells: {}, fxN: {}, fxAt: {}, reveal: null, ctr: { hid: [0, 0], seek: [0, 0] },
+    ring: -1, opened: [], tells: {}, fxN: {}, fxAt: {}, sugs: {}, reveal: null, ctr: { hid: [0, 0], seek: [0, 0] },
   };
   narr(room, '💍 المحيبس! فريق يخفي المحبس والثاني يدور عليه (عدد القبضات متساوي). أول فريق يوصل ' + WIN + ' نقاط يفوز', 'info');
   setPhase(room, 'intro', T.intro);
@@ -143,7 +148,7 @@ function startRound(room, redo) {
   clearBots(room);
   mh.hider = nextMember(room, mh.hiding, 'hid');
   mh.searcher = nextMember(room, 1 - mh.hiding, 'seek');
-  mh.ring = -1; mh.opened = []; mh.tells = {}; mh.fxN = {}; mh.fxAt = {}; mh.reveal = null;
+  mh.ring = -1; mh.opened = []; mh.tells = {}; mh.fxN = {}; mh.fxAt = {}; mh.sugs = {}; mh.reveal = null;
   narr(room, '🔄 الجولة ' + mh.round + ': ' + TEAM[mh.hiding] + ' يخفي المحبس 💍 و' + nameOf(room, mh.searcher) + ' يدور عليه', 'info');
   setPhase(room, 'hide', T.hide);
 }
@@ -192,6 +197,7 @@ function doOut(room, f) {
   const mh = room.mh;
   if (f === mh.ring) { settle(room, mh.hiding, 'burn', f); return; }
   mh.opened.push(f);
+  Object.keys(mh.sugs).forEach(k => { if (mh.sugs[k] === f) delete mh.sugs[k]; }); // القبضة انفتحت: تنمسح الاقتراحات عليها
   const rem = remaining(room);
   narr(room, '🖐️ ' + nameOf(room, mh.searcher) + ' قال "طلّع" على ' + fistLabel(room, f) + ' ← فاضية ✅ (باقي ' + rem.length + ')', 'info');
   api.broadcast(room, { t: 'hopen', fist: f });
@@ -230,6 +236,16 @@ function handle(room, p, m) {
     const f = parseInt(m.fist);
     if (!validFist(room, f) || mh.opened.includes(f)) return;
     if (m.t === 'hout') doOut(room, f); else doBat(room, f);
+  } else if (m.t === 'hsug') {
+    // اقتراح من زميل الباحث: ضغطة تقترح القبضة، وضغطة ثانية عليها تلغي الاقتراح
+    if (mh.phase !== 'seek' || teamOf(i) === mh.hiding || i === mh.searcher) return;
+    const f = parseInt(m.fist);
+    if (!validFist(room, f) || mh.opened.includes(f)) return;
+    const now = Date.now();
+    if (now - (p.lastSug || 0) < 300) return;
+    p.lastSug = now;
+    if (mh.sugs[i] === f) delete mh.sugs[i]; else mh.sugs[i] = f;
+    api.sendRoom(room);
   } else if (m.t === 'hfx') {
     if ((mh.phase !== 'hide' && mh.phase !== 'seek') || teamOf(i) !== mh.hiding) return;
     const f = parseInt(m.fist);
@@ -249,6 +265,7 @@ function leave(room, p, why) {
   if (!mh) return;
   const idx = room.players.indexOf(p);
   p.left = true;
+  delete mh.sugs[idx];
   if (!room.players.some(q => !q.bot && !q.left)) { api.destroy(room); return; }
   narr(room, '🚪 ' + p.name + (why === 'dc' ? ' انقطع اتصاله' : ' انسحب'), 'info');
   if (!members(room, 0).length || !members(room, 1).length) { finish(room, members(room, 0).length ? 0 : 1); return; }
@@ -274,6 +291,11 @@ function scheduleBots(room) {
   } else if (mh.phase === 'seek') {
     const s = room.players[mh.searcher];
     if (s && s.bot) botAt(room, () => botSeek(room), 3000, 5500);
+    // أجهزة زملاء الباحث تقترح قبضة (الأقل هزّات = الأقل شكاً)
+    members(room, 1 - mh.hiding).forEach(j => {
+      const q = room.players[j];
+      if (q && q.bot && j !== mh.searcher) botAt(room, () => botSug(room, j), 3500, 9000);
+    });
   }
 }
 function botHide(room) {
@@ -302,6 +324,15 @@ function scheduleFx(room) {
     }
   });
 }
+function botSug(room, j) {
+  const mh = room.mh;
+  if (mh.phase !== 'seek') return;
+  const rem = remaining(room);
+  if (!rem.length) return;
+  const sorted = rem.map(f => [f, (mh.tells[f] || 0) + Math.random() * 1.6]).sort((a, b) => a[1] - b[1]);
+  mh.sugs[j] = sorted[0][0];
+  api.sendRoom(room);
+}
 function botSeek(room) {
   const mh = room.mh;
   if (mh.phase !== 'seek') return;
@@ -324,10 +355,11 @@ function view(room, i) {
     score: mh.score, win: WIN, hiding: mh.hiding, hider: mh.hider, searcher: mh.searcher,
     team: teamOf(i), fists: fistsOf(room, mh.hiding), per: perPlayer(room, mh.hiding), opened: mh.opened,
     locked: mh.ring >= 0, ring: showRing ? mh.ring : -1,
+    sug: mh.phase === 'seek' && teamOf(i) !== mh.hiding ? Object.keys(mh.sugs).map(k => [+k, mh.sugs[k]]) : [],
     reveal: mh.phase === 'result' || mh.phase === 'done' ? mh.reveal : null,
     winner: mh.winner,
     players: room.players.map((p, k) => ({ t: teamOf(k), l: !!p.left })),
   };
 }
 
-module.exports = { MIN, MAX, WIN, setApi, init, reset, resume, handle, leave, view };
+module.exports = { MIN, MAX, WIN, PHRASES, setApi, init, reset, resume, handle, leave, view };

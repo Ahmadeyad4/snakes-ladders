@@ -802,7 +802,7 @@ wss.on('connection', ws => {
       const room = ws.room;
       if (!room || room.game !== 'mafia' || room.state !== 'play' || !ws.player) return;
       mafia.handle(room, ws.player, m);
-    } else if (m.t === 'hhide' || m.t === 'hout' || m.t === 'hbat' || m.t === 'hfx') {
+    } else if (m.t === 'hhide' || m.t === 'hout' || m.t === 'hbat' || m.t === 'hfx' || m.t === 'hsug') {
       const room = ws.room;
       if (!room || room.game !== 'mheibes' || room.state !== 'play' || !ws.player) return;
       mheibes.handle(room, ws.player, m);
@@ -838,7 +838,10 @@ wss.on('connection', ws => {
       ws.lastChat = now;
       const i = room.players.indexOf(ws.player);
       let payload;
-      if (m.emoji) {
+      if (m.phrase != null) {
+        if (room.game !== 'mheibes' || !mheibes.PHRASES.includes(m.phrase)) return;
+        payload = { t: 'chat', i, text: m.phrase, emoji: true, phrase: true };
+      } else if (m.emoji) {
         if (!EMOJIS.includes(m.emoji)) return;
         payload = { t: 'chat', i, text: m.emoji, emoji: true };
       } else {

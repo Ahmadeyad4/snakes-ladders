@@ -438,6 +438,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 #hNarr.found{background:#124a3b;border-color:#3ddc97}
 #hNarr.miss{background:#5a1523;border-color:#ff6b81}
 #hRow{display:grid;grid-template-columns:1fr 1fr;gap:9px;flex:none}
+#hRow>.hp:only-child{grid-column:1/-1}
 .hp{position:relative;display:flex;flex-direction:column;gap:6px;background:var(--panel);border:2px solid transparent;border-radius:16px;padding:8px;border-top:4px solid var(--tc)}
 .hp.me{border-color:#ffffff55}
 .hp.act{border-color:var(--gold)}
@@ -456,6 +457,13 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 .fist.ring::after{content:'💍';position:absolute;top:-9px;inset-inline-end:-4px;font-size:20px;animation:mpop .4s ease-out}
 .fist.pick{border-color:var(--bad)}
 .fist.shake{animation:hshake .6s ease-in-out}
+#hPhr{display:flex;gap:6px;overflow-x:auto;flex:none;padding:2px 0;scrollbar-width:none}
+#hPhr::-webkit-scrollbar{display:none}
+#hPhr button{flex:none;background:var(--panel);border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700;white-space:nowrap}
+#hPhr button:active{background:var(--panel2)}
+.bubble.phr{font-size:13px;font-weight:700;white-space:nowrap;background:#000d;color:#fff;border-radius:12px;padding:4px 10px;top:-32px;z-index:5}
+.fist.sugd{box-shadow:0 0 0 2px #8be9ffaa inset}
+.fist .sg{position:absolute;bottom:-9px;inset-inline-start:2px;display:flex;gap:1px;font-size:14px;line-height:1;background:var(--ink);border:1px solid #8be9ff;border-radius:999px;padding:2px 5px;z-index:2}
 .fist.shake::before{content:'💦';position:absolute;top:-8px;inset-inline-start:-2px;font-size:15px}
 .hp.dead,.hc.dead{opacity:.4}
 @keyframes hshake{0%,100%{transform:translateX(0) rotate(0)}15%{transform:translateX(-5px) rotate(-8deg)}35%{transform:translateX(5px) rotate(8deg)}55%{transform:translateX(-4px) rotate(-6deg)}75%{transform:translateX(3px) rotate(4deg)}}
@@ -487,7 +495,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
       <button class="tile g3" data-game="mafia"><span class="ic">🕵️</span>مافيا</button>
     </div>
     <button class="btn alt" id="hFriends">👥 أصدقائي<span id="badgeH"></span></button>
-    <div class="ver">الإصدار 12</div>
+    <div class="ver">الإصدار 15</div>
   </section>
 
   <section id="menu" class="screen">
@@ -564,6 +572,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
     <div id="hRow"></div>
     <div id="hAct"></div>
     <div id="hSeek"></div>
+    <div id="hPhr"></div>
   </section>
 
   <section id="game" class="screen">
@@ -748,6 +757,14 @@ Object.assign(sfx,{
     if(h.abs)setTimeout(()=>sfx.clang(),140);
     if(h.killed)setTimeout(()=>sfx.kill(),160);
   }
+});
+Object.assign(sfx,{   // أصوات المحيبس
+  mhShake(){[0,.05,.1,.15].forEach(t=>noise(.035,.28,t,3000+Math.random()*900));tone(1900,.04,'square',.03,.02)},   // خشخشة القبضة
+  mhOpen(){noise(.18,.22,0,900);tone(520,.12,'triangle',.14,.04);tone(740,.16,'triangle',.12,.12)},                 // طلّع: قبضة فاضية
+  mhLock(){tone(190,.07,'square',.1);tone(140,.1,'square',.09,.08)},                                                // قفل المحبس بالقبضة
+  mhFound(){[1568,2093,2637,3136].forEach((f,i)=>tone(f,.55,'sine',.09,i*.09));tone(392,.4,'triangle',.1,.05)},     // لقى المحبس
+  mhMiss(){tone(220,.28,'sawtooth',.1,0,90);tone(110,.35,'sine',.22,.05,50);noise(.12,.25,0,500)},                  // حرق أو بات غلط
+  mhBeat(){tone(70,.11,'sine',.38);tone(58,.14,'sine',.32,.17)}                                                      // دقات قلب قبل آخر قبضتين
 });
 Object.assign(sfx,{   // أصوات المافيا
   night(){tone(196,1.4,'sine',.12,0,98);tone(147,1.6,'triangle',.08,.1,73)},
@@ -1065,11 +1082,11 @@ async function handle(m){
     if(m.kind==='death')sfx.gun();else if(m.kind==='save')sfx.heal();
   }else if(m.t==='hnarr'){
     hNarr=m;addSys(m.text);mhRenderNarr();
-    if(m.kind==='found')sfx.heal();else if(m.kind==='miss')sfx.bad();
+    if(m.kind==='found')sfx.mhFound();else if(m.kind==='miss')sfx.mhMiss();
   }else if(m.t==='hfx'){
-    mhShake(m.fist);sfx.chat();
+    mhShake(m.fist);sfx.mhShake();
   }else if(m.t==='hopen'){
-    sfx.vote();
+    sfx.mhOpen();
   }else if(m.t==='mpriv'){
     addSys(m.text);toast(m.text);sfx.ding();
   }else if(m.t==='sys'){
@@ -1307,8 +1324,8 @@ function addLog(m){
 function bubble(i,e){
   const c=$((room&&room.game==='ludo'?'lchip':room&&room.game==='mafia'?'mc':room&&room.game==='mheibes'?'hp':'chip')+i);if(!c)return;
   const old=c.querySelector('.bubble');if(old)old.remove();
-  const b=document.createElement('span');b.className='bubble';b.textContent=e;c.appendChild(b);
-  setTimeout(()=>b.remove(),2500);
+  const b=document.createElement('span');b.className='bubble'+(e.length>2?' phr':'');b.textContent=e;c.appendChild(b);
+  setTimeout(()=>b.remove(),e.length>2?3200:2500);
 }
 
 // ---------- مافيا ----------
@@ -1461,6 +1478,8 @@ setInterval(()=>{
 // ---------- محيبس ----------
 const HTEAM=[{n:'🔴 الفريق الأحمر',c:'#e5383b'},{n:'🔵 الفريق الأزرق',c:'#4895ef'}];
 let hNarr=null,hSel=-1,hKey='',hDl=0,hTot=1;
+let hSugN=0,hLock=false;
+const HPHRASES=['بات!', 'طلّع إيدك!', 'ما بيها شي 😏', 'المحبس بيها!', 'لا تصدّق هزّاتنا 😂', 'عفية! 👏'];
 function mhRenderNarr(){
   const n=$('hNarr');
   if(!hNarr){n.className='';n.textContent='';return}
@@ -1481,7 +1500,7 @@ function renderMheibes(){
   const me=room.you,ph=h.phase,done=room.state==='done',nm=i=>room.players[i]?room.players[i].name:'؟';
   const key=room.code+':'+h.round+':'+ph;
   if(key!==hKey){
-    hKey=key;hSel=-1;
+    hKey=key;hSel=-1;hSugN=0;hLock=false;
     if(ph==='hide'&&h.hider===me){sfx.turn();notifyTurn()}
     else if(ph==='seek'&&h.searcher===me){sfx.turn();notifyTurn()}
   }
@@ -1504,6 +1523,11 @@ function renderMheibes(){
   const canHide=ph==='hide'&&h.hider===me&&!h.locked;
   const canSeek=ph==='seek'&&h.searcher===me;
   const canFx=(ph==='hide'||ph==='seek')&&iHide&&!canHide;
+  const canSug=ph==='seek'&&!iHide&&h.searcher!==me;
+  const sugs=h.sug||[];
+  if(sugs.length>hSugN&&(canSeek||canSug))sfx.chat();
+  hSugN=sugs.length;
+  if(ph==='hide'&&h.locked&&!hLock){hLock=true;if(h.hider===me)sfx.mhLock()}
   const row=$('hRow');row.innerHTML='';
   room.players.forEach((p,i)=>{
     const pv=h.players[i];if(pv.t!==h.hiding||pv.l)return;
@@ -1514,12 +1538,15 @@ function renderMheibes(){
     const fr=mfEl('div','hf2');
     h.fists.filter(f=>(f>>2)===i).forEach(f=>{
       const op=h.opened.includes(f),isRing=h.ring===f;
-      const b=mfEl('button','fist'+(op?' opened':'')+(isRing?' ring':'')+(hSel===f?' sel':'')+(h.reveal&&h.reveal.fist===f?' pick':'')+(!op&&(canHide||canSeek||canFx)?' tgt':''));
+      const b=mfEl('button','fist'+(op?' opened':'')+(isRing?' ring':'')+(hSel===f?' sel':'')+(h.reveal&&h.reveal.fist===f?' pick':'')+(!op&&(canHide||canSeek||canFx||canSug)?' tgt':'')+(sugs.some(s=>s[1]===f)?' sugd':''));
       b.id='hf'+f;b.textContent=op?'🖐️':'✊';b.append(mfEl('small',null,mhHand(f,h.per)));
+      const sf=sugs.filter(s=>s[1]===f);
+      if(sf.length&&!op)b.append(mfEl('span','sg',sf.map(s=>MAV[s[0]%MAV.length]).join('')));
       b.onclick=()=>{
         if(op)return;
         if(canHide||canSeek){hSel=f;renderMheibes()}
         else if(canFx)tx({t:'hfx',fist:f});
+        else if(canSug)tx({t:'hsug',fist:f});
       };
       fr.append(b);
     });
@@ -1546,14 +1573,15 @@ function renderMheibes(){
     else hint('👀 فريق الخصم يخبّي المحبس... استعد');
   }else if(ph==='seek'){
     if(canSeek){
-      hint(hSel<0?'🔎 اضغط على قبضة ثم اختر: "طلّع" إذا تظنها فاضية، أو "بات" إذا تظن المحبس فيها':'القبضة المختارة: '+nm(hSel>>2)+' ('+mhHand(hSel,h.per)+')');
+      hint(hSel<0?'🔎 اضغط على قبضة ثم اختر: "طلّع" إذا تظنها فاضية، أو "بات" إذا تظن المحبس فيها'+(sugs.length?' — الأيقونات على القبضات اقتراحات زملائك 💡':''):'القبضة المختارة: '+nm(hSel>>2)+' ('+mhHand(hSel,h.per)+')');
       const r=mfEl('div','row');
       const o=mfEl('button','btn alt','🖐️ طلّع');o.disabled=hSel<0;o.onclick=()=>{if(hSel>=0){tx({t:'hout',fist:hSel});hSel=-1}};
       const b=mfEl('button','btn','💍 بات');b.disabled=hSel<0;b.onclick=()=>{if(hSel>=0)tx({t:'hbat',fist:hSel})};
       r.append(o,b);A.append(r);
     }else if(iHide){
       hint(h.hider===me?'💍 المحبس عندك. اهزّ قبضات للتمويه (اضغط عليها) 💦':'😏 اضغط على القبضات لتهزها وتضلل الباحث 💦');
-    }else hint(nm(h.searcher)+' يدور... ساعده بالدردشة 💬');
+    }else if(canSug)hint('💡 '+nm(h.searcher)+' يدور... اضغط على قبضة لتقترحها عليه (واضغط عليها مرة ثانية لإلغاء الاقتراح)');
+    else hint(nm(h.searcher)+' يدور... ساعده بالدردشة 💬');
   }else if(ph==='result'){
     const rv=h.reveal;
     if(rv)hint((rv.win===h.team?'✅ نقطة لفريقك! ':'❌ نقطة للخصم. ')+'الجولة القادمة بعد لحظات...');
@@ -1574,6 +1602,11 @@ function mhEnd(){
     $('win').classList.add('on');
   }else if(room&&room.game==='mheibes'){winShown=false;$('win').classList.remove('on');$('winSub').style.whiteSpace=''}
 }
+// دقات قلب لما تبقى قبضتين بالبحث (القرار الأخير)
+setInterval(()=>{
+  if(!room||room.game!=='mheibes'||!room.mh||room.state!=='play'||room.mh.phase!=='seek'||!$('mheibes').classList.contains('on'))return;
+  if(room.mh.fists.length-room.mh.opened.length===2)sfx.mhBeat();
+},1200);
 setInterval(()=>{
   if(!room||room.game!=='mheibes'||!room.mh||room.state!=='play')return;
   const l=Math.max(0,hDl-Date.now());
@@ -2032,6 +2065,7 @@ $('startBtn').onclick=()=>tx({t:'start'});
 $('dice').onclick=()=>{if($('dice').classList.contains('go')){extraFor=-1;tx({t:'roll'})}};
 $('againBtn').onclick=()=>tx({t:'again'});
 document.querySelectorAll('[data-leave]').forEach(b=>b.onclick=()=>{if(room&&room.state==='play'&&!confirm('الخروج يعني انسحابك من اللعبة. متأكد؟'))return;tx({t:'leave'});wantRoom=null;room=null;inviteQueue=[];$('log').innerHTML='';$('win').classList.remove('on');openMenu(curGame)});
+(function(){const hp=$('hPhr');HPHRASES.forEach(p=>{const b=document.createElement('button');b.type='button';b.textContent=p;b.onclick=()=>tx({t:'chat',phrase:p});hp.appendChild(b)})})();
 const em=$('emojis');EMOJIS.forEach(e=>{const b=document.createElement('button');b.textContent=e;b.onclick=()=>{if(chatBlocked())return toast('🌙 بالليل المافيا فقط يحجون');tx({t:'chat',emoji:e})};em.appendChild(b)});
 function sendChat(){const v=$('chatIn').value.trim();if(!v)return;if(chatBlocked()){toast('🌙 بالليل المافيا فقط يحجون');return}tx({t:'chat',text:v});$('chatIn').value=''}
 $('chatSend').onclick=sendChat;
