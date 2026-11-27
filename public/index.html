@@ -410,36 +410,40 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 @media (prefers-reduced-motion:reduce){.mc.tgt,#mSky .stars circle,.rcard,#mNarr.on,.mhint.sleep::after{animation:none}}
 
 .tile.g4{background:linear-gradient(145deg,#ffcf4a,#d9801a);color:#3a2600}
-#chat.hm{height:26dvh}
+#chat.hm{height:18dvh;min-height:120px}
 #mheibes{overflow-y:auto;overflow-x:hidden;max-width:520px;width:100%;margin:0 auto;gap:8px;padding:4px 2px 10px}
 #hTop{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:14px;flex:none}
 #hTop button{background:none;color:var(--muted);padding:4px 8px}
 #hScore{display:flex;align-items:stretch;gap:8px;flex:none}
 #hScore .ht{flex:1;border-radius:14px;padding:8px 10px;background:var(--panel);border-bottom:4px solid var(--tc);display:flex;align-items:center;justify-content:space-between;gap:6px;font-weight:800;font-size:14px;transition:background .3s}
-#hScore .ht.hid{background:var(--panel2)}
+
 #hScore .ht b{font-size:13px}
 #hScore .ht span{font-size:26px;color:var(--tc);min-width:26px;text-align:center}
 #hScore .ht i{font-style:normal;font-size:18px}
-#hMid{display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:12px;color:var(--muted);white-space:nowrap}
-#hMid b{color:var(--gold);font-size:18px}
-#hScene{position:relative;flex:none;border-radius:18px;overflow:hidden;padding:12px 14px 16px;display:flex;align-items:center;gap:10px;background:linear-gradient(160deg,#5a3a14,#2a1a0a);transition:background .6s}
-#hScene.ph-seek{background:linear-gradient(160deg,#1f4a7a,#0f2240)}
-#hScene.ph-result{background:linear-gradient(160deg,#6a2a6a,#2a1040)}
-#hScene.ph-done{background:linear-gradient(160deg,#2a2a4a,#4a4a7a)}
-#hIcon{font-size:34px;line-height:1}
+#hMid{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;color:var(--muted);white-space:nowrap}
+#hMid b{color:var(--gold);font-size:15px}
+#hMid #hTime{font-size:17px;min-width:36px;padding:1px 7px;border-radius:10px}
+#hScene{position:relative;flex:none;border-radius:14px;overflow:hidden;padding:7px 12px 11px;display:flex;align-items:center;gap:9px;background:linear-gradient(160deg,color-mix(in srgb,#c98a2e 45%,var(--ink)),var(--ink));transition:background .6s}
+#hScene.ph-seek{background:linear-gradient(160deg,color-mix(in srgb,#3a7bd5 50%,var(--ink)),var(--ink))}
+#hScene.ph-result{background:linear-gradient(160deg,color-mix(in srgb,#b04fb5 45%,var(--ink)),var(--ink))}
+#hScene.ph-done{background:linear-gradient(160deg,var(--panel),var(--panel2))}
+#hIcon{font-size:24px;line-height:1}
 #hScene>div:nth-child(2){flex:1;min-width:0}
-#hTitle{display:block;font-size:19px}
-#hSub{display:block;font-size:13px;opacity:.95}
+#hTitle{display:block;font-size:15px}
+#hSub{display:block;font-size:13px;opacity:.95;line-height:1.4}
+#hScene.nf{background:linear-gradient(160deg,color-mix(in srgb,#3ddc97 40%,var(--ink)),color-mix(in srgb,#3ddc97 18%,var(--ink)))}
+#hScene.nm{background:linear-gradient(160deg,color-mix(in srgb,#ff6b81 45%,var(--ink)),color-mix(in srgb,#ff6b81 20%,var(--ink)))}
+#hScene.nf #hSub,#hScene.nm #hSub{font-weight:700;opacity:1}
 #hTime{font-size:22px;font-weight:800;min-width:42px;text-align:center;background:#0007;border-radius:12px;padding:3px 8px;direction:ltr}
-#hBar{position:absolute;left:0;right:0;bottom:0;height:5px;background:#0006}
+#hBar{position:absolute;left:0;right:0;bottom:0;height:4px;background:#0006}
 #hBar i{display:block;height:100%;width:100%;background:var(--gold);transition:width .25s linear}
-#hNarr{display:none;flex:none;border-radius:12px;padding:9px 12px;font-weight:700;font-size:14.5px;text-align:center;line-height:1.5;background:var(--panel2);border:1px solid #ffffff22}
+#hNarr{display:none!important;flex:none;border-radius:12px;padding:9px 12px;font-weight:700;font-size:14.5px;text-align:center;line-height:1.5;background:var(--panel2);border:1px solid #ffffff22}
 #hNarr.on{display:block;animation:mpop .3s ease-out}
 #hNarr.found{background:#124a3b;border-color:#3ddc97}
 #hNarr.miss{background:#5a1523;border-color:#ff6b81}
 #hRow{display:grid;grid-template-columns:1fr 1fr;gap:9px;flex:none}
 #hRow>.hp:only-child{grid-column:1/-1}
-.hp{position:relative;display:flex;flex-direction:column;gap:6px;background:var(--panel);border:2px solid transparent;border-radius:16px;padding:8px;border-top:4px solid var(--tc)}
+.hp{position:relative;display:flex;flex-direction:column;gap:8px;background:var(--panel);border:2px solid transparent;border-radius:16px;padding:8px;border-top:4px solid var(--tc)}
 .hp.me{border-color:#ffffff55}
 .hp.act{border-color:var(--gold)}
 .hp .hn{display:flex;align-items:center;gap:6px;font-weight:700;font-size:13.5px;min-width:0}
@@ -447,8 +451,10 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 .hp .hn .nt{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .hp .hn small{margin-inline-start:auto;font-size:11px;color:var(--gold);white-space:nowrap}
 .hf2{display:flex;gap:6px}
-.fist{position:relative;flex:1;border-radius:12px;background:var(--panel2);border:2px solid transparent;font-size:34px;line-height:1;padding:7px 0 5px;color:var(--text);transition:transform .1s,border-color .2s}
-.fist small{display:block;font-size:10.5px;color:var(--muted);margin-top:2px}
+.fist{position:relative;flex:1 1 0;min-height:68px;border-radius:14px;background:var(--panel2);border:2px solid transparent;font-size:40px;line-height:1;padding:9px 0 7px;color:var(--text);transition:transform .1s,border-color .2s}
+.fist small{display:block;font-size:12.5px;font-weight:700;color:var(--muted);margin-top:3px}
+.hf2{flex-wrap:wrap}
+.hf2:has(.fist:nth-child(3)) .fist{flex:1 1 calc(50% - 6px)}
 .fist.tgt{border-color:var(--gold);cursor:pointer}
 .fist.tgt:active{transform:scale(.94)}
 .fist.sel{background:#4a3a10;border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
@@ -457,24 +463,41 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 .fist.ring::after{content:'💍';position:absolute;top:-9px;inset-inline-end:-4px;font-size:20px;animation:mpop .4s ease-out}
 .fist.pick{border-color:var(--bad)}
 .fist.shake{animation:hshake .6s ease-in-out}
-#hPhr{display:flex;gap:6px;overflow-x:auto;flex:none;padding:2px 0;scrollbar-width:none}
-#hPhr::-webkit-scrollbar{display:none}
-#hPhr button{flex:none;background:var(--panel);border-radius:999px;padding:8px 13px;font-size:13px;font-weight:700;white-space:nowrap}
-#hPhr button:active{background:var(--panel2)}
+#emojis .phr{display:none}
+#chat.hm #emojis{overflow-x:auto;justify-content:flex-start;scrollbar-width:none}
+#chat.hm #emojis::-webkit-scrollbar{display:none}
+#chat.hm #emojis button{flex:none;padding:4px 9px}
+#chat.hm #emojis .phr{display:block;font-size:13px;font-weight:700;border-radius:999px;white-space:nowrap;padding:6px 13px}
 .bubble.phr{font-size:13px;font-weight:700;white-space:nowrap;background:#000d;color:#fff;border-radius:12px;padding:4px 10px;top:-32px;z-index:5}
 .fist.sugd{box-shadow:0 0 0 2px #8be9ffaa inset}
-.fist .sg{position:absolute;bottom:-9px;inset-inline-start:2px;display:flex;gap:1px;font-size:14px;line-height:1;background:var(--ink);border:1px solid #8be9ff;border-radius:999px;padding:2px 5px;z-index:2}
-.fist.shake::before{content:'💦';position:absolute;top:-8px;inset-inline-start:-2px;font-size:15px}
+.fist .sg{position:absolute;bottom:-10px;inset-inline-end:2px;display:flex;gap:1px;font-size:14px;line-height:1;background:var(--ink);border:1px solid #8be9ff;border-radius:999px;padding:2px 5px;z-index:2}
+.fist.shake::before{content:'💦';position:absolute;top:-8px;left:50%;transform:translateX(-50%);font-size:16px}
 .hp.dead,.hc.dead{opacity:.4}
 @keyframes hshake{0%,100%{transform:translateX(0) rotate(0)}15%{transform:translateX(-5px) rotate(-8deg)}35%{transform:translateX(5px) rotate(8deg)}55%{transform:translateX(-4px) rotate(-6deg)}75%{transform:translateX(3px) rotate(4deg)}}
 #hSeek{display:flex;flex-wrap:wrap;gap:6px;flex:none}
 .hc{position:relative;display:flex;align-items:center;gap:6px;background:var(--panel);border-radius:999px;padding:5px 12px 5px 10px;font-size:13px;font-weight:700;border:2px solid transparent;border-top:3px solid var(--tc)}
 .hc.act{border-color:var(--gold);background:var(--panel2)}
 .hc.me{border-color:#ffffff55}
-#hAct{display:flex;flex-direction:column;gap:8px;flex:none}
+#hAct{display:flex;flex-direction:column;gap:8px;flex:none;position:sticky;bottom:0;z-index:6;background:linear-gradient(180deg,transparent,var(--ink) 14px);padding:14px 0 4px;margin-top:-6px}
+#hAct:empty{display:none}
 #hAct .row{display:flex;gap:8px}
 #hAct .row .btn{flex:1}
 @media (prefers-reduced-motion:reduce){.fist.shake,#hNarr.on{animation:none}}
+/* شاشات عريضة (تابلت/لابتوب/موبايل أفقي): الدردشة عمود جانبي بطول الشاشة واللوح عمودين */
+@media (min-aspect-ratio:5/4){
+  #chat.hm,#chat.mf{height:auto;min-height:0}
+  #mheibes{max-width:min(900px,100%);padding-bottom:6px}
+  #mheibes.on{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);grid-template-areas:"top top" "score score" "scene row" "seek row" "act act";gap:8px 12px;align-content:start}
+  #hTop{grid-area:top}#hScore{grid-area:score}#hScene{grid-area:scene;align-self:start}
+  #hRow{grid-area:row;align-self:start}#hSeek{grid-area:seek;align-self:start}#hAct{grid-area:act}
+  .fist{font-size:46px;min-height:84px}
+  #hScene{flex-wrap:wrap}
+}
+@media (min-aspect-ratio:5/4) and (max-height:520px){
+  #hIcon{display:none}
+  .fist{font-size:34px;min-height:60px;padding:6px 0 4px}
+  #hAct{padding-top:8px}
+}
 </style>
 </head>
 <body>
@@ -564,15 +587,14 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
     <div id="hTop"><span id="hcode"></span><button id="hRules" aria-label="طريقة اللعب">📖</button><button class="muteBtn" aria-label="الصوت">🔊</button><button data-leave>خروج</button></div>
     <div id="hScore">
       <div class="ht" id="hT0" style="--tc:#e5383b"><b>🔴 الأحمر</b><i id="hR0"></i><span id="hS0">0</span></div>
-      <div id="hMid">الجولة<b id="hRound">1</b></div>
+      <div id="hMid">الجولة<b id="hRound">1</b><div id="hTime">0</div></div>
       <div class="ht" id="hT1" style="--tc:#4895ef"><span id="hS1">0</span><i id="hR1"></i><b>🔵 الأزرق</b></div>
     </div>
-    <div id="hScene" class="ph-hide"><span id="hIcon">💍</span><div><b id="hTitle"></b><small id="hSub"></small></div><div id="hTime">0</div><div id="hBar"><i></i></div></div>
+    <div id="hScene" class="ph-hide"><span id="hIcon">💍</span><div><b id="hTitle"></b><small id="hSub"></small></div><div id="hBar"><i></i></div></div>
     <div id="hNarr"></div>
     <div id="hRow"></div>
     <div id="hAct"></div>
     <div id="hSeek"></div>
-    <div id="hPhr"></div>
   </section>
 
   <section id="game" class="screen">
@@ -861,7 +883,7 @@ function renderSnd(){
 $('sndMute').onclick=()=>{muted=!muted;localStorage.setItem('sl_mute',muted?'1':'0');setMuteIcon();renderSnd();if(!muted)sfx.ding()};
 
 let token=localStorage.getItem('sl_token');
-if(!token){token=(crypto.randomUUID?crypto.randomUUID():String(Math.random()).slice(2)+Date.now()).replace(/-/g,'');localStorage.setItem('sl_token',token)}
+if(!token){token=(crypto.randomUUID?crypto.randomUUID():Array.from(crypto.getRandomValues(new Uint8Array(16)),x=>x.toString(16).padStart(2,'0')).join('')).replace(/-/g,'');localStorage.setItem('sl_token',token)}
 $('nameIn').value=localStorage.getItem('sl_name')||'';
 
 // ---------- اللوحة ----------
@@ -1081,7 +1103,7 @@ async function handle(m){
     mNarr=m;addSys(m.text);mfRenderNarr();
     if(m.kind==='death')sfx.gun();else if(m.kind==='save')sfx.heal();
   }else if(m.t==='hnarr'){
-    hNarr=m;addSys(m.text);mhRenderNarr();
+    hNarr=m;m._t=Date.now();addSys(m.text);mhRenderNarr();
     if(m.kind==='found')sfx.mhFound();else if(m.kind==='miss')sfx.mhMiss();
   }else if(m.t==='hfx'){
     mhShake(m.fist);sfx.mhShake();
@@ -1480,10 +1502,16 @@ const HTEAM=[{n:'🔴 الفريق الأحمر',c:'#e5383b'},{n:'🔵 الفر�
 let hNarr=null,hSel=-1,hKey='',hDl=0,hTot=1;
 let hSugN=0,hLock=false;
 const HPHRASES=['بات!', 'طلّع إيدك!', 'ما بيها شي 😏', 'المحبس بيها!', 'لا تصدّق هزّاتنا 😂', 'عفية! 👏'];
+let hSubBase='',hNarrT=0;
 function mhRenderNarr(){
-  const n=$('hNarr');
-  if(!hNarr){n.className='';n.textContent='';return}
-  n.className='on '+(hNarr.kind||'info');n.textContent=hNarr.text;
+  const sc=$('hScene'),sub=$('hSub');if(!sc||!sub)return;
+  clearTimeout(hNarrT);
+  const live=hNarr&&Date.now()-(hNarr._t||0)<7000;
+  sc.classList.remove('nf','nm');
+  if(!live){sub.textContent=hSubBase;return}
+  const k=hNarr.kind;if(k==='found')sc.classList.add('nf');else if(k==='miss')sc.classList.add('nm');
+  sub.textContent=hNarr.text;
+  hNarrT=setTimeout(mhRenderNarr,7000-(Date.now()-hNarr._t)+50);
 }
 const mhHand=(f,per)=>per===2?((f&3)?'يمين':'يسار'):'قبضة '+((f&3)+1);
 function mhFist(f){return document.getElementById('hf'+f)}
@@ -1492,8 +1520,14 @@ function mhShake(f){
   e.classList.remove('shake');void e.offsetWidth;e.classList.add('shake');
   clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove('shake'),700);
 }
+let hSig='';
 function renderMheibes(){
   const h=room.mh;
+  if(h&&$('mheibes').classList.contains('on')){
+    const sig=JSON.stringify([room.code,room.state,room.you,room.players.map(p=>p.name),h.phase,h.round,h.score,h.hiding,h.hider,h.searcher,h.locked,h.opened,h.ring,h.reveal,h.sug,h.fists,h.per,h.team,h.players,h.winner,hSel]);
+    if(sig===hSig){hDl=Date.now()+h.left;hTot=Math.max(1,h.total);return}
+    hSig=sig;
+  }else hSig='';
   show('mheibes');
   $('hcode').textContent='الغرفة '+room.code;
   if(!h)return;
@@ -1516,7 +1550,7 @@ function renderMheibes(){
     result:['🏁','نتيجة الجولة','المحبس كان بالقبضة المضيئة'],
     done:['🏆','انتهت اللعبة','']};
   const P=PH[ph]||PH.intro;
-  $('hIcon').textContent=P[0];$('hTitle').textContent=P[1];$('hSub').textContent=P[2];
+  $('hIcon').textContent=P[0];$('hTitle').textContent=P[1];hSubBase=P[2];$('hSub').textContent=P[2];
   $('hScene').className='ph-'+ph;
   $('hTime').style.visibility=done?'hidden':'';
   // قبضات الفريق المخفّي
@@ -1539,7 +1573,7 @@ function renderMheibes(){
     h.fists.filter(f=>(f>>2)===i).forEach(f=>{
       const op=h.opened.includes(f),isRing=h.ring===f;
       const b=mfEl('button','fist'+(op?' opened':'')+(isRing?' ring':'')+(hSel===f?' sel':'')+(h.reveal&&h.reveal.fist===f?' pick':'')+(!op&&(canHide||canSeek||canFx||canSug)?' tgt':'')+(sugs.some(s=>s[1]===f)?' sugd':''));
-      b.id='hf'+f;b.textContent=op?'🖐️':'✊';b.append(mfEl('small',null,mhHand(f,h.per)));
+      b.id='hf'+f;b.textContent=op?'🖐️':'✊';b.setAttribute('aria-label',mhHand(f,h.per)+' لـ '+nm(f>>2)+(op?' — مفتوحة':'')+(hSel===f?' — مختارة':''));b.append(mfEl('small',null,mhHand(f,h.per)));
       const sf=sugs.filter(s=>s[1]===f);
       if(sf.length&&!op)b.append(mfEl('span','sg',sf.map(s=>MAV[s[0]%MAV.length]).join('')));
       b.onclick=()=>{
@@ -2065,8 +2099,8 @@ $('startBtn').onclick=()=>tx({t:'start'});
 $('dice').onclick=()=>{if($('dice').classList.contains('go')){extraFor=-1;tx({t:'roll'})}};
 $('againBtn').onclick=()=>tx({t:'again'});
 document.querySelectorAll('[data-leave]').forEach(b=>b.onclick=()=>{if(room&&room.state==='play'&&!confirm('الخروج يعني انسحابك من اللعبة. متأكد؟'))return;tx({t:'leave'});wantRoom=null;room=null;inviteQueue=[];$('log').innerHTML='';$('win').classList.remove('on');openMenu(curGame)});
-(function(){const hp=$('hPhr');HPHRASES.forEach(p=>{const b=document.createElement('button');b.type='button';b.textContent=p;b.onclick=()=>tx({t:'chat',phrase:p});hp.appendChild(b)})})();
 const em=$('emojis');EMOJIS.forEach(e=>{const b=document.createElement('button');b.textContent=e;b.onclick=()=>{if(chatBlocked())return toast('🌙 بالليل المافيا فقط يحجون');tx({t:'chat',emoji:e})};em.appendChild(b)});
+HPHRASES.forEach(p=>{const b=document.createElement('button');b.type='button';b.className='phr';b.textContent=p;b.onclick=()=>tx({t:'chat',phrase:p});em.appendChild(b)});
 function sendChat(){const v=$('chatIn').value.trim();if(!v)return;if(chatBlocked()){toast('🌙 بالليل المافيا فقط يحجون');return}tx({t:'chat',text:v});$('chatIn').value=''}
 $('chatSend').onclick=sendChat;
 $('chatIn').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat()});
