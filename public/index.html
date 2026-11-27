@@ -54,16 +54,16 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-o
 .chip.off{opacity:.45}
 .bubble{position:absolute;top:-26px;left:50%;transform:translateX(-50%);font-size:26px;animation:pop .25s ease-out}
 @keyframes pop{from{transform:translateX(-50%) scale(.2)}to{transform:translateX(-50%) scale(1)}}
-#boardWrap{direction:ltr;width:min(calc(100vw - 8px),55dvh);aspect-ratio:1;position:relative;
+#boardWrap{container-type:inline-size;direction:ltr;width:min(calc(100vw - 8px),55dvh);aspect-ratio:1;position:relative;
   border:5px solid var(--frame);border-radius:10px;background:var(--frame);flex:none}
-#board{font-size:12px;direction:ltr;position:absolute;inset:0}
+#board{font-size:12px;font-size:clamp(8px,3.6cqw,22px);direction:ltr;position:absolute;inset:0}
 .cell{position:absolute;width:10%;height:10%;color:var(--num);font-size:1em;font-weight:700;padding:1px 3px;box-shadow:inset 0 0 0 .6px var(--grid)}
 .cell.a{background:var(--ca)} .cell.b{background:var(--cb)}
 .cell.end{background:var(--cend);color:#2a2100}
 #lines{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
 .tok{will-change:left,top;position:absolute;width:4.6%;height:4.6%;border-radius:50%;border:2px solid #fff;
   transform:translate(-50%,-50%);transition:left .17s linear,top .17s linear;box-shadow:0 2px 4px #0006;z-index:3}
-.tok.me{box-shadow:0 0 0 2px var(--ink),0 0 0 4px #fff}
+.tok.me{box-shadow:0 0 0 2px var(--ink),0 0 0 4px #fff;z-index:4}
 #ctrl,#lCtrl{display:flex;align-items:center;gap:12px;width:100%;justify-content:center}
 #dice,#lDice{font-size:54px;line-height:1;width:76px;height:76px;border-radius:18px;background:#fff;color:#1b2a3a;
   display:flex;align-items:center;justify-content:center;flex:none}
@@ -219,9 +219,12 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
 /* شاشة حية ودرج: الصفحة مثبّتة ما تتحرك، وشريط الأزرار فوق وزر الخروج ع اليمين */
 html.lock,html.lock body{overflow:hidden;overscroll-behavior:none}
 html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
-#top{flex-direction:row-reverse;justify-content:flex-end;gap:4px;min-height:40px;position:relative;z-index:30}
+#top{flex-direction:row-reverse;justify-content:flex-end;gap:4px;min-height:42px;position:relative;z-index:30}
 #top #gcode{margin-right:auto}
-#top button{min-height:36px;min-width:40px}
+#top button{min-height:42px;min-width:44px}
+#lTop button,#mTop button,#hTop button{min-height:42px;min-width:44px;padding:8px 12px}
+#top,#lTop,#mTop,#hTop{gap:4px}
+#top [data-leave],#lTop [data-leave],#mTop [data-leave],#hTop [data-leave]{background:var(--panel)!important;color:var(--bad)!important;border-radius:10px;margin-inline:8px}
 #ctrl.extra #dice.go{animation:xpulse .9s ease-in-out infinite}
 @keyframes xpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,207,74,.8)}50%{box-shadow:0 0 0 8px rgba(255,207,74,0)}}
 /* قائمة منسدلة (خانة وحدة) */
@@ -484,7 +487,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
       <button class="tile g3" data-game="mafia"><span class="ic">🕵️</span>مافيا</button>
     </div>
     <button class="btn alt" id="hFriends">👥 أصدقائي<span id="badgeH"></span></button>
-    <div class="ver">الإصدار 10</div>
+    <div class="ver">الإصدار 11</div>
   </section>
 
   <section id="menu" class="screen">
@@ -1087,14 +1090,29 @@ function placeToks(){
   if(!room)return;
   const box=$('toks');
   while(box.children.length>room.players.length)box.lastChild.remove();
+  const cnt={},seen={};
+  room.players.forEach((p,i)=>{const n=disp[i]||0;if(n)cnt[n]=(cnt[n]||0)+1});
   room.players.forEach((p,i)=>{
     let t=box.children[i];
     if(!t){t=document.createElement('div');t.className='tok';box.appendChild(t)}
     const n=disp[i]||0,pt=n?xy(n):{x:-6,y:105+i*0};
-    const ox=((i%3)-1)*2.4,oy=(Math.floor(i/3)-.5)*2.6;
+    let ox=0,oy=0,sz='';
+    if(isWar()&&p.cls!=null){
+      ox=((i%3)-1)*2.4;oy=(Math.floor(i/3)-.5)*2.6;
+    }else if(n){
+      // توزيع القطع المجتمعة بنفس المربع بدون تراكب: كل ما زاد العدد تصغر القطعة
+      const c=cnt[n],k=seen[n]=(seen[n]||0)+1,j=k-1;
+      if(c===2){ox=(j?1:-1)*2.5;sz='4%'}
+      else if(c>=3){
+        const cols=c<=4?2:3,rows=Math.ceil(c/cols),col=j%cols,row=Math.floor(j/cols);
+        const inRow=row===rows-1?c-row*cols:cols;
+        ox=(col-(inRow-1)/2)*3.4;oy=(row-(rows-1)/2)*3.4;sz='3.5%';
+      }
+    }
     if(isWar()&&p.cls!=null){const k=p.cls+p.color;if(t.dataset.k!==k){t.dataset.k=k;t.innerHTML=soldierSVG(p.cls,p.color)+'<span class="hp"></span>'}
       t.querySelector('.hp').textContent='♥'.repeat(Math.max(0,p.hp));t.classList.add('bt')}
     else if(t.classList.contains('bt')){t.classList.remove('bt');t.innerHTML='';delete t.dataset.k}
+    t.style.width=t.style.height=t.classList.contains('bt')?'':sz;
     t.style.background=p.color;t.classList.toggle('me',i===room.you);
     t.style.left=(n?pt.x+ox:3+i*5)+'%';t.style.top=(n?pt.y+oy:97)+'%';
   });
