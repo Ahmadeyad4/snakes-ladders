@@ -186,8 +186,16 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
 .pbtn small{font-size:11px;font-weight:600;opacity:.85}
 .pbtn small.pf{font-size:10px;font-weight:700;color:var(--gold);opacity:1;line-height:1.2;text-align:center}
 .pbtn.on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
-#sbAct{display:none;flex:none;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;align-content:center;margin:4px 0;width:100%;max-width:100%;height:96px;overflow:hidden;font-size:13px;font-weight:700}
-#sbAct.on{display:flex}
+#ctrl{display:flex;flex-direction:row;align-items:center;justify-content:flex-start;gap:12px;height:96px;margin:4px 0}
+#sSide{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;overflow:hidden}
+#sStat{font-size:16px;font-weight:800;text-align:center;line-height:1.3}
+#sbAct{display:flex;flex:none;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center;align-content:center;width:100%;max-width:100%;overflow:hidden;font-size:13px;font-weight:700}
+#sbAct:empty{display:none}
+#dice{width:84px;height:84px;font-size:62px;border:0;padding:0;cursor:pointer;font-family:inherit;transition:transform .1s,opacity .2s}
+#dice:active{transform:scale(.93)}
+#dice.off{opacity:.55;cursor:default}
+#dice.go{box-shadow:0 0 0 4px var(--gold),0 0 18px 6px rgba(255,183,3,.85);animation:dicego 1s ease-in-out infinite}
+#dice.rolling{animation:shake .22s linear infinite}
 #sbAct>span{flex:0 0 100%;text-align:center;line-height:1.3}
 #sbAct .btn{padding:7px 10px;font-size:13px;white-space:nowrap}
 #top,#chips,#ctrl,#lTop,#lChips,#lCtrl{flex:none}
@@ -198,7 +206,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 #top{flex-direction:row-reverse;justify-content:flex-end;gap:4px;min-height:40px;position:relative;z-index:30}
 #top #gcode{margin-right:auto}
 #top button{min-height:36px;min-width:40px}
-#ctrl.extra #rollBtn:not(.wait){animation:xpulse .9s ease-in-out infinite}
+#ctrl.extra #dice.go{animation:xpulse .9s ease-in-out infinite}
 @keyframes xpulse{0%,100%{box-shadow:0 0 0 0 rgba(255,207,74,.8)}50%{box-shadow:0 0 0 8px rgba(255,207,74,0)}}
 /* قائمة منسدلة (خانة وحدة) */
 .dd{position:relative;width:100%}
@@ -378,10 +386,9 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
       <div id="sTraps"></div>
       <div id="sFx"></div>
     </div></div>
-    <div id="sbAct"></div>
     <div id="ctrl">
-      <div id="dice">⚀</div>
-      <button class="btn" id="rollBtn">ارمِ النرد</button>
+      <button id="dice" type="button" aria-label="ارمِ النرد">⚀</button>
+      <div id="sSide"><div id="sStat"></div><div id="sbAct"></div></div>
     </div>
   </section>
 </div>
@@ -597,7 +604,7 @@ function fitBoard(){
   const ids=L?['lTop','lChips','lCtrl','lWrap']:['top','chips','ctrl','boardWrap'];
   const vw=document.documentElement.clientWidth,vh=window.innerHeight,land=vw/vh>=1.25;
   const cs=getComputedStyle(document.body),pad=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
-  let fixed=$(ids[0]).offsetHeight+$(ids[1]).offsetHeight+$(ids[2]).offsetHeight+24+pad+(L?0:$('sbAct').offsetHeight);
+  let fixed=$(ids[0]).offsetHeight+$(ids[1]).offsetHeight+$(ids[2]).offsetHeight+24+pad;
   let size;
   if(land){size=Math.min(vw-Math.min(340,vw*.3)-24,vh-fixed)}
   else{size=Math.min(vw-8,vh-fixed-($('chat').classList.contains('min')?46:(L?130:150)))}
@@ -608,7 +615,7 @@ function fitBoard(){
   $('chat').style.height=land?'':Math.max(L?130:150,Math.floor(vh-fixed-size))+'px';
 }
 window.addEventListener('resize',fitBoard);
-if(window.ResizeObserver){const ro=new ResizeObserver(()=>fitBoard());['top','chips','sbAct','ctrl','lTop','lChips','lCtrl'].forEach(id=>{const e=document.getElementById(id);if(e)ro.observe(e)})}
+if(window.ResizeObserver){const ro=new ResizeObserver(()=>fitBoard());['top','chips','ctrl','lTop','lChips','lCtrl'].forEach(id=>{const e=document.getElementById(id);if(e)ro.observe(e)})}
 window.addEventListener('orientationchange',()=>setTimeout(fitBoard,200));
 const turnFlash=document.createElement('div');turnFlash.id='turnFlash';document.body.appendChild(turnFlash);
 function notifyTurn(){
@@ -784,9 +791,11 @@ function render(){
   renderSbAct();placeToks();fitBoard();
   const act=room.state==='play'&&room.phase==='act';
   const mine=room.state==='play'&&room.turn===room.you&&!animating&&!act;
-  const rb=$('rollBtn');rb.disabled=!mine;rb.classList.toggle('wait',!mine);
-  rb.textContent=room.state!=='play'?'انتهت اللعبة':mine?'ارمِ النرد 🎲':animating?'...':act&&room.turn===room.you?'⚔️ استعمل قدرتك':'دور '+room.players[room.turn].name;
-  if(mine&&extraFor===room.you){rb.textContent='🎲 رمية إضافية! ارمِ';$('ctrl').classList.add('extra')}else $('ctrl').classList.remove('extra');
+  const db=$('dice');db.classList.toggle('go',mine);db.classList.toggle('off',!mine);db.setAttribute('aria-disabled',mine?'false':'true');
+  let st=room.state!=='play'?'انتهت اللعبة':mine?'دورك، اضغط النرد 🎲':animating?'...':act&&room.turn===room.you?'⚔️ استعمل قدرتك':'دور '+room.players[room.turn].name;
+  if(mine&&extraFor===room.you){st='🎲 رمية إضافية! اضغط النرد';$('ctrl').classList.add('extra')}else $('ctrl').classList.remove('extra');
+  $('sStat').textContent=st;
+  if(!animating&&room.dice>0)db.textContent=FACES[room.dice-1];
   updateEnd();
 }
 const SBC=['🗡️','🛡️','🎯','🪤'],SBN=['المندفع','المدرع','القناص','المهندس'],SBF=['ضربة ×2','درع + 3♥','يقنص بعيد','فخ مخفي'];
@@ -881,7 +890,7 @@ setInterval(()=>{if(!isWar()||room.state!=='play'||animating||document.hidden||!
   sBurst(sPct(1+Math.floor(Math.random()*99)),'amb')},7000);
 function renderSbAct(){
   const sa=$('sbAct');if(!sa)return;sa.innerHTML='';$('sTraps').innerHTML='';
-  const on=!!room&&room.game!=='ludo'&&room.mode==='battle'&&room.state==='play';sa.classList.toggle('on',on);
+  const on=!!room&&room.game!=='ludo'&&room.mode==='battle'&&room.state==='play';
   if(!on)return;
   const me=room.players[room.you];
   if(me&&me.cls!=null){const s=document.createElement('span');s.textContent=SBC[me.cls]+' '+SBN[me.cls]+' ('+SBF[me.cls]+') '+'♥'.repeat(Math.max(0,me.hp))+((me.traps&&me.traps.length)?' | 🪤 '+me.traps.join('، '):'');sa.appendChild(s)}
@@ -1333,7 +1342,7 @@ $('invYes').onclick=()=>{
   wantRoom=inv.code;tx({t:'join',code:inv.code,name:myName()});
 };
 $('startBtn').onclick=()=>tx({t:'start'});
-$('rollBtn').onclick=()=>{extraFor=-1;tx({t:'roll'})};
+$('dice').onclick=()=>{if($('dice').classList.contains('go')){extraFor=-1;tx({t:'roll'})}};
 $('againBtn').onclick=()=>tx({t:'again'});
 document.querySelectorAll('[data-leave]').forEach(b=>b.onclick=()=>{if(room&&room.state==='play'&&!confirm('الخروج يعني انسحابك من اللعبة. متأكد؟'))return;tx({t:'leave'});wantRoom=null;room=null;inviteQueue=[];$('log').innerHTML='';$('win').classList.remove('on');openMenu(curGame)});
 const em=$('emojis');EMOJIS.forEach(e=>{const b=document.createElement('button');b.textContent=e;b.onclick=()=>tx({t:'chat',emoji:e});em.appendChild(b)});
