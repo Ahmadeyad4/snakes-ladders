@@ -224,6 +224,12 @@ const server = http.createServer((req, res) => {
       res.writeHead(200, { 'Content-Type': req.url.endsWith('.svg') ? 'image/svg+xml' : 'image/png', 'Cache-Control': 'public, max-age=86400' });
       res.end(data);
     });
+  } else if (req.url === '/dice.mp3' || req.url === '/music.mp3' || req.url === '/war.mp3') {
+    fs.readFile(path.join(__dirname, 'public', req.url.slice(1)), (err, data) => {
+      if (err) { res.writeHead(404); return res.end('not found'); }
+      res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'public, max-age=604800' });
+      res.end(data);
+    });
   } else if (req.url === '/health') {
     res.writeHead(200); res.end('ok');
   } else {
