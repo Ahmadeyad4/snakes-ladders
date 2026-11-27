@@ -59,13 +59,13 @@ function move(room, pi, dice, SNAKES, LADDERS) {
   return { from, land, to: p.pos, hits, trap, rush };
 }
 
-// القناص: بعد حركته يضرب عدو يبعد 2..6 خانات قدامه (مرة بالدور، مو على الملاجئ)
+// القناص: بعد حركته يضرب عدو يبعد 2..4 خانات قدامه (مرة بالدور، مو على الملاجئ)
 function snipeTargets(room, pi) {
   const p = room.players[pi], out = [];
   if (!p || p.cls !== 2 || !room.ts || room.ts.shot) return out;
   room.players.forEach((q, qi) => {
     const d = q.pos - p.pos;
-    if (qi !== pi && d >= 2 && d <= 6 && !isSafe(q.pos)) out.push({ i: qi, d });
+    if (qi !== pi && d >= 2 && d <= 4 && !isSafe(q.pos)) out.push({ i: qi, d });
   });
   return out;
 }
