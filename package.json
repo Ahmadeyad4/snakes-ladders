@@ -5,5 +5,13 @@
   "main": "server.js",
   "scripts": { "start": "node server.js" },
   "engines": { "node": ">=18" },
-  "dependencies": { "ws": "^8.18.0" }
+  "dependencies": {
+    "ws": "^8.18.0",
+    "@supabase/supabase-js": "^2.45.0"
+  }
 }
+```[cite: 10]
+
+### الخطوات التالية بعد تحديث `package.json`
+1. ارفع `package.json` إلى مستودعك على GitHub (أو اضغط **Save, rebuild, and deploy** في Render إذا كنت قد عدّلت المتغيرات للتو) حتى يثبّت Render حزمة `@supabase/supabase-js` تلقائياً.
+2. أرسل لي ملف `server.js` (أو الجزء الخاص بالأصدقاء وربط قاعدة البيانات فيه) حتى أدمج لك الاتصال بـ Supabase وحفظ/قراءة/حذف الأصدقاء من جدول `friends` بشكل مباشر ودائم.
