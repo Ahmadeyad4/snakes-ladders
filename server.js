@@ -3,6 +3,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const { WebSocketServer } = require('ws');
+const sb = require('./snakes_battle');
 let ludo = null;
 try { ludo = require('./ludo'); } catch (e) { console.error('ludo.js غير موجود، لعبة لودو معطلة:', e.message); }
 
@@ -250,8 +251,10 @@ function sendRoom(room) {
       pub: !!room.pub,
       game: room.game || 'snakes',
       mode: room.mode || 'classic',
+      env: room.env || 'mine',
       acts: room.game === 'ludo' && room.mode === 'battle' && room.state === 'play'
-        ? { snipe: ludo.snipeTargets(room, room.turn).map(t => ({ i: t.i, tok: t.tok })), trap: ludo.canTrap(room, room.turn) } : null,
+        ? { snipe: ludo.snipeTargets(room, room.turn).map(t => ({ i: t.i, tok: t.tok })), trap: ludo.canTrap(room, room.turn) } : (room.game !== 'ludo' && room.mode === 'battle' && room.state === 'play'
+        ? { snipe: sb.snipeTargets(room, room.turn).map(t => ({ i: t.i })), trap: sb.canTrap(room, room.turn) } : null),
       phase: room.phase || null,
       dice: room.dice || 0,
       legal: room.legal || [],
@@ -260,7 +263,7 @@ function sendRoom(room) {
       rollsLeft: room.rollsLeft || 0,
       reason: room.endReason || null,
       startIn: room.startAt ? Math.max(0, room.startAt - Date.now()) : null,
-      players: room.players.map((q, qi) => ({ name: q.name, color: q.color, pos: q.pos, tokens: q.tokens || null, hp: q.hp || null, traps: qi === i ? (q.traps || []) : [], seat: q.seat == null ? null : q.seat, online: !!q.ws || !!q.bot })),
+      players: room.players.map((q, qi) => ({ name: q.name, color: q.color, pos: q.pos, tokens: q.tokens || null, hp: q.hp == null ? null : q.hp, cls: q.cls == null ? null : q.cls, pick: q.pick == null ? null : q.pick, traps: qi === i ? (q.traps || []) : [], seat: q.seat == null ? null : q.seat, online: !!q.ws || !!q.bot })),
     });
   });
 }
@@ -352,8 +355,12 @@ function detach(ws) {
   sendRoom(room);
 }
 
+const ENVS = ['mine', 'classic', 'desert', 'spring', 'snow', 'rain', 'night'];
+const validEnv = v => (ENVS.includes(v) ? v : 'mine');
+const validCls = v => (Number.isInteger(v) && v >= 0 && v <= 3 ? v : null);
 function initGame(room) {
   if (room.game === 'ludo') ludo.init(room);
+  else if (room.mode === 'battle') sb.init(room);
   else room.players.forEach(p => (p.pos = 0));
 }
 function startGame(room) {
@@ -403,7 +410,8 @@ function autoAct(room) {
       if (c) ludoMove(room, c.tok, c.val); else { nextTurn(room); sendRoom(room); }
     } else if (room.rollsLeft > 0) ludoRoll(room);
     else { nextTurn(room); sendRoom(room); }
-  } else doRoll(room);
+  } else if (room.mode === 'battle' && room.phase === 'act') sbAuto(room);
+  else doRoll(room);
 }
 
 function nextTurn(room) {
@@ -413,7 +421,7 @@ function nextTurn(room) {
   const n = room.players.length;
   for (let k = 1; k <= n; k++) {
     const j = (room.turn + k) % n;
-    if (room.players[j].ws || room.players[j].bot) { room.turn = j; if (room.mode === 'battle') ludo.resetTurn(room); armTimer(room); return; }
+    if (room.players[j].ws || room.players[j].bot) { room.turn = j; if (room.mode === 'battle') (room.game === 'ludo' ? ludo : sb).resetTurn(room); armTimer(room); return; }
   }
   clearTimeout(room.timer);
 }
@@ -505,11 +513,53 @@ function ludoMove(room, ti, val) {
   ludoAdvance(room);
 }
 
+// ===== وضع المعركة لحية ودرج =====
+function sbRoll(room) {
+  const i = room.turn, dice = 1 + Math.floor(Math.random() * 6);
+  const r = sb.move(room, i, dice, SNAKES, LADDERS);
+  broadcast(room, { t: 'move', i, dice, from: r.from, land: r.land, to: r.to, hits: r.hits, trap: r.trap });
+  if (r.to === 100) {
+    room.state = 'done'; room.winner = i; room.endReason = 'win';
+    clearTimeout(room.timer); sendRoom(room); return;
+  }
+  room.extra = dice === 6 || r.rush;            // السته أو قتل المندفع = رمية إضافية
+  if (sb.hasActs(room, i)) { room.phase = 'act'; armTimer(room); } else sbEnd(room);
+  sendRoom(room);
+}
+function sbEnd(room) {
+  if (room.extra) { room.extra = false; room.phase = 'roll'; armTimer(room); }
+  else nextTurn(room);
+}
+function sbAfterAct(room) {
+  if (sb.hasActs(room, room.turn)) armTimer(room); else sbEnd(room);
+  sendRoom(room);
+}
+function sbShoot(room, qi) {
+  if (room.state !== 'play' || room.mode !== 'battle' || room.phase !== 'act') return;
+  const h = sb.snipe(room, room.turn, qi);
+  if (!h) return;
+  broadcast(room, { t: 'sbhit', i: room.turn, hit: h });
+  sbAfterAct(room);
+}
+function sbTrap(room) {
+  if (room.state !== 'play' || room.mode !== 'battle' || room.phase !== 'act') return;
+  if (!sb.placeTrap(room, room.turn)) return;
+  broadcast(room, { t: 'ltrapset', i: room.turn });
+  sbAfterAct(room);
+}
+function sbAuto(room) {
+  if (sb.canTrap(room, room.turn)) return sbTrap(room);
+  const tg = sb.snipeTargets(room, room.turn);
+  if (tg.length) return sbShoot(room, tg[0].i);
+  sbEnd(room); sendRoom(room);
+}
+
 function doRoll(room) {
   if (room.state !== 'play') return;
   const i = room.turn;
   const p = room.players[i];
   if (!p) return;
+  if (room.mode === 'battle') { if (room.phase !== 'act') sbRoll(room); return; }
   const dice = 1 + Math.floor(Math.random() * 6);
   const from = p.pos;
   let land = from + dice;
@@ -546,9 +596,9 @@ wss.on('connection', ws => {
       if (ws.room) detach(ws);
       const game = m.game === 'ludo' && ludo ? 'ludo' : 'snakes';
       const max = game === 'ludo' ? 4 : (m.max === 6 ? 6 : 4);
-      const mode = game === 'ludo' && (m.mode === 'quick' || m.mode === 'battle') ? m.mode : 'classic';
-      const room = { code: makeCode(), max, game, mode, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
-      const player = { token, name: ws.user ? ws.user.name : cleanName(m.name), color: COLORS[0], pos: 0, ws: null };
+      const mode = (game === 'ludo' && (m.mode === 'quick' || m.mode === 'battle')) || (game === 'snakes' && m.mode === 'battle') ? m.mode : 'classic';
+      const room = { code: makeCode(), max, game, mode, env: game === 'snakes' ? validEnv(m.env) : 'mine', players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
+      const player = { token, name: ws.user ? ws.user.name : cleanName(m.name), color: COLORS[0], pos: 0, ws: null, pick: validCls(m.cls) };
       room.players.push(player);
       rooms.set(room.code, room);
       const nb = Math.max(0, Math.min(max - 1, parseInt(m.bots) || 0));
@@ -591,16 +641,16 @@ wss.on('connection', ws => {
       if (!token || !ws.user) return;
       if (ws.room) detach(ws);
       const rgame = m.game === 'ludo' && ludo ? 'ludo' : 'snakes';
-      const rmode = rgame === 'ludo' && (m.mode === 'quick' || m.mode === 'battle') ? m.mode : 'classic';
+      const rmode = (rgame === 'ludo' && (m.mode === 'quick' || m.mode === 'battle')) || (rgame === 'snakes' && m.mode === 'battle') ? m.mode : 'classic';
       let room = null;
       for (const r of rooms.values()) {
         if (r.pub && (r.game || 'snakes') === rgame && (r.mode || 'classic') === rmode && r.state === 'lobby' && r.players.length < r.max && !r.players.some(p => p.token === token)) { room = r; break; }
       }
       if (!room) {
-        room = { code: makeCode(), max: 4, game: rgame, mode: rmode, pub: true, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
+        room = { code: makeCode(), max: 4, game: rgame, mode: rmode, env: rgame === 'snakes' ? validEnv(m.env) : 'mine', pub: true, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
         rooms.set(room.code, room);
       }
-      const player = { token, name: ws.user.name, color: pickColor(room), pos: 0, ws: null };
+      const player = { token, name: ws.user.name, color: pickColor(room), pos: 0, ws: null, pick: validCls(m.cls) };
       room.players.push(player);
       attach(ws, room, player);
       checkAutoStart(room);
@@ -624,6 +674,26 @@ wss.on('connection', ws => {
       if (!room || room.state !== 'lobby' || room.players[room.host] !== ws.player) return;
       if (room.players.length < 2) return send(ws, { t: 'err', msg: 'تحتاج لاعبين اثنين على الأقل' });
       startGame(room);
+    } else if (m.t === 'pick') {
+      const room = ws.room;
+      if (!room || room.state !== 'lobby' || room.game === 'ludo' || room.mode !== 'battle' || !room.players.includes(ws.player)) return;
+      ws.player.pick = validCls(m.cls); sendRoom(room);
+    } else if (m.t === 'env') {
+      const room = ws.room;
+      if (!room || room.state !== 'lobby' || room.game === 'ludo' || room.players[room.host] !== ws.player) return;
+      room.env = validEnv(m.env); sendRoom(room);
+    } else if (m.t === 'sshoot') {
+      const room = ws.room;
+      if (!room || room.game === 'ludo' || room.players[room.turn] !== ws.player) return;
+      sbShoot(room, parseInt(m.i));
+    } else if (m.t === 'strap') {
+      const room = ws.room;
+      if (!room || room.game === 'ludo' || room.players[room.turn] !== ws.player) return;
+      sbTrap(room);
+    } else if (m.t === 'send') {
+      const room = ws.room;
+      if (!room || room.state !== 'play' || room.mode !== 'battle' || room.game === 'ludo' || room.phase !== 'act' || room.players[room.turn] !== ws.player) return;
+      sbEnd(room); sendRoom(room);
     } else if (m.t === 'lroll') {
       const room = ws.room;
       if (!room || room.game !== 'ludo' || room.players[room.turn] !== ws.player) return;
