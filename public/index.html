@@ -80,6 +80,18 @@ input:focus-visible,button:focus-visible{outline:3px solid var(--gold);outline-o
 /* الدردشة */
 #chat{display:none;flex-direction:column;gap:6px;height:25dvh;min-height:150px;padding:6px 0}
 #chat.on{display:flex}
+#chatTog{display:none;flex:none;align-items:center;justify-content:center;gap:6px;width:100%;background:var(--panel);border-radius:10px;padding:6px 10px;font-size:13px;font-weight:700;color:var(--muted)}
+#chat.gm #chatTog{display:flex}
+#chatTog b{background:var(--bad);color:#fff;border-radius:999px;padding:0 7px;font-size:12px}
+#chatTog b:empty{display:none}
+#chatTog i{font-style:normal;transition:transform .15s}
+#chat.min #chatTog i{transform:rotate(180deg)}
+#chat.min{height:auto!important;min-height:0!important}
+#chat.min #log,#chat.min #emojis,#chat.min #chatRow{display:none}
+#turnFlash{position:fixed;inset:0;pointer-events:none;z-index:18;opacity:0;border:6px solid var(--gold);border-radius:10px;box-shadow:inset 0 0 40px 8px rgba(255,207,74,.75)}
+#turnFlash.on{animation:tflash 1.1s ease-out}
+@keyframes tflash{0%{opacity:0}15%{opacity:1}35%{opacity:.25}55%{opacity:.9}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){#turnFlash.on{animation:none;opacity:0}}
 #log{flex:1;min-height:0;overflow-y:auto;background:var(--panel);border-radius:12px;padding:8px 10px;font-size:14px}
 #log p{margin:0 0 4px;overflow-wrap:anywhere}
 #log b{margin-inline-end:6px}
@@ -198,6 +210,8 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 .ddi{display:block;width:100%;text-align:start;padding:11px 14px;background:transparent;font-weight:700;font-size:16px}
 .ddi+.ddi{border-top:1px solid var(--panel2)}
 .ddi.on{background:var(--panel2);color:var(--gold)}
+.ddf{display:inline-block;margin-inline-start:8px;font-size:12px;font-weight:700;color:var(--gold)}
+.ddi.on .ddf{opacity:.9}
 .mbtn{flex:1;border:2px solid transparent;border-radius:14px;background:var(--panel2);color:var(--text);font:inherit;font-size:17px;font-weight:800;padding:10px 6px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:2px}
 .mbtn small{font-size:12px;font-weight:600;opacity:.8}
 .mbtn.on{border-color:var(--gold);box-shadow:0 0 0 2px var(--gold) inset}
@@ -373,6 +387,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 </div>
 
 <div id="chat">
+  <button id="chatTog" type="button" aria-label="الدردشة">💬 الدردشة <b id="chatUnread"></b><i id="chatArw">▾</i></button>
   <div id="log"></div>
   <div id="emojis"></div>
   <div id="chatRow">
@@ -585,7 +600,7 @@ function fitBoard(){
   let fixed=$(ids[0]).offsetHeight+$(ids[1]).offsetHeight+$(ids[2]).offsetHeight+24+pad+(L?0:$('sbAct').offsetHeight);
   let size;
   if(land){size=Math.min(vw-Math.min(340,vw*.3)-24,vh-fixed)}
-  else{size=Math.min(vw-8,vh-fixed-(L?130:150))}
+  else{size=Math.min(vw-8,vh-fixed-($('chat').classList.contains('min')?46:(L?130:150)))}
   size=Math.max(200,Math.floor(size));
   const w=$(ids[3]);w.style.width=size+'px';w.style.height=size+'px';
   if(!L)$('board').style.fontSize=Math.max(8,size/10*.27)+'px';
@@ -595,11 +610,22 @@ function fitBoard(){
 window.addEventListener('resize',fitBoard);
 if(window.ResizeObserver){const ro=new ResizeObserver(()=>fitBoard());['top','chips','sbAct','ctrl','lTop','lChips','lCtrl'].forEach(id=>{const e=document.getElementById(id);if(e)ro.observe(e)})}
 window.addEventListener('orientationchange',()=>setTimeout(fitBoard,200));
+const turnFlash=document.createElement('div');turnFlash.id='turnFlash';document.body.appendChild(turnFlash);
+function notifyTurn(){
+  turnFlash.classList.remove('on');void turnFlash.offsetWidth;turnFlash.classList.add('on');
+  try{if(navigator.vibrate&&!(typeof muted!=='undefined'&&muted))navigator.vibrate([140,70,140])}catch(e){}}
+let chatUnread=0;
+function setChatMin(v){const c=$('chat');c.classList.toggle('min',v);try{localStorage.setItem('sl_chat_min',v?'1':'0')}catch(e){}
+  if(!v){chatUnread=0;$('chatUnread').textContent='';const lg=$('log');lg.scrollTop=lg.scrollHeight}
+  fitBoard()}
+try{if(localStorage.getItem('sl_chat_min')==='1')$('chat').classList.add('min')}catch(e){}
+$('chatTog').onclick=()=>setChatMin(!$('chat').classList.contains('min'));
 function show(id){if((id==='home'||id==='menu')&&effKey){envApplied='';applyTheme(themeKey)}
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
   document.documentElement.classList.toggle('lock',id==='game');if(id==='game')window.scrollTo(0,0);
   if(id!=='game'&&id!=='ludo'){$('chat').style.height='';$('chat').style.minHeight=''}else fitBoard();
-  $('chat').classList.toggle('on',id!=='home'&&id!=='menu')}
+  $('chat').classList.toggle('on',id!=='home'&&id!=='menu');
+  $('chat').classList.toggle('gm',id==='game'||id==='ludo')}
 function toast(t){const e=$('toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1600)}
 
 // ---------- معالجة الرسائل ----------
@@ -611,7 +637,7 @@ async function handle(m){
     ldisp=m.players.map(p=>p.tokens?p.tokens.slice():[-1,-1,-1,-1]);
     selVal=null;snipeMode=false;zoomReset();
     if(m.turn!==m.you||m.state!=='play')extraFor=-1;
-    if(m.state==='play'&&m.turn===m.you&&!wasMine&&!animating)sfx.turn();
+    if(m.state==='play'&&m.turn===m.you&&!wasMine&&!animating){sfx.turn();notifyTurn()}
     m._dl=m.startIn!=null?Date.now()+m.startIn:null;
     if(m.state==='lobby'){
       $('win').classList.remove('on');
@@ -786,16 +812,16 @@ function pickDrop(box,title,opts,cur,fn){
   const w=document.createElement('div');w.className='dd';
   const c=opts.find(o=>o[0]===cur)||opts[0];
   const b=document.createElement('button');b.type='button';b.className='ddb';
-  const t=document.createElement('span');t.textContent=c[1]+' '+c[2];const ar=document.createElement('i');ar.textContent='▾';b.append(t,ar);
+  const t=document.createElement('span');t.textContent=c[1]+' '+c[2];if(c[3]){const f=document.createElement('small');f.className='ddf';f.textContent=c[3];t.appendChild(f)}const ar=document.createElement('i');ar.textContent='▾';b.append(t,ar);
   const l=document.createElement('div');l.className='ddl';
-  opts.forEach(o=>{const it=document.createElement('button');it.type='button';it.className='ddi'+(o[0]===c[0]?' on':'');it.textContent=o[1]+' '+o[2];
+  opts.forEach(o=>{const it=document.createElement('button');it.type='button';it.className='ddi'+(o[0]===c[0]?' on':'');it.textContent=o[1]+' '+o[2];if(o[3]){const f=document.createElement('small');f.className='ddf';f.textContent=o[3];it.appendChild(f)}
     it.onclick=e=>{e.stopPropagation();w.classList.remove('open');fn(o[0])};l.appendChild(it)});
   b.onclick=e=>{e.stopPropagation();const was=w.classList.contains('open');closeDrops();if(!was)w.classList.add('open')};
   w.append(b,l);box.appendChild(w)}
 function renderMenuPick(){
   const box=$('sbPick');if(!box)return;box.innerHTML='';
   if(curGame!=='snakes')return;
-  if(curMode==='battle')pickRow(box,'⚔️ اختر نوع جنديك',CLS_OPTS,myCls,v=>{myCls=v;renderMenuPick()});
+  if(curMode==='battle')pickDrop(box,'⚔️ اختر نوع جنديك',CLS_OPTS,myCls,v=>{myCls=v;renderMenuPick()});
   pickDrop(box,'🌍 المظهر (جو اللعب)',ENV_OPTS,myEnv,v=>{myEnv=v;renderMenuPick()})}
 function renderLobPick(){
   const box=$('lobPick');if(!box)return;box.innerHTML='';
@@ -803,7 +829,7 @@ function renderLobPick(){
   const me=room.players[room.you],cur=me&&me.pick!=null?me.pick:null;
   if(room.mode==='battle'){
     if(me&&cur!==myCls&&pickSent!==room.code+':'+myCls){pickSent=room.code+':'+myCls;tx({t:'pick',cls:myCls})}
-    pickRow(box,'⚔️ اختر نوع جنديك',CLS_OPTS,myCls,v=>{myCls=v;pickSent=room.code+':'+v;tx({t:'pick',cls:v});renderLobPick()})}
+    pickDrop(box,'⚔️ اختر نوع جنديك',CLS_OPTS,myCls,v=>{myCls=v;pickSent=room.code+':'+v;tx({t:'pick',cls:v});renderLobPick()})}
   if(room.host===room.you&&!room.pub)pickDrop(box,'🌍 المظهر (جو اللعب)',ENV_OPTS,room.env||'mine',v=>{myEnv=v;tx({t:'env',env:v})});
   else if(room.env&&room.env!=='mine'){const e=ENV_OPTS.find(o=>o[0]===room.env);if(e){const d=document.createElement('div');d.className='pkt';d.textContent='🌍 جو اللعب: '+e[1]+' '+e[2];box.appendChild(d)}}}
 function syncEnv(){
@@ -889,6 +915,7 @@ function addLog(m){
   row.append(b,document.createTextNode(m.text));log.appendChild(row);
   while(log.children.length>80)log.firstChild.remove();
   log.scrollTop=log.scrollHeight;
+  if($('chat').classList.contains('min')&&m.i!==room.you){chatUnread++;$('chatUnread').textContent=chatUnread}
 }
 function bubble(i,e){
   const c=$((room&&room.game==='ludo'?'lchip':'chip')+i);if(!c)return;
