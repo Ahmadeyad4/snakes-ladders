@@ -487,7 +487,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
       <button class="tile g3" data-game="mafia"><span class="ic">🕵️</span>مافيا</button>
     </div>
     <button class="btn alt" id="hFriends">👥 أصدقائي<span id="badgeH"></span></button>
-    <div class="ver">الإصدار 11</div>
+    <div class="ver">الإصدار 12</div>
   </section>
 
   <section id="menu" class="screen">
@@ -963,12 +963,15 @@ function notifyTurn(){
   turnFlash.classList.remove('on');void turnFlash.offsetWidth;turnFlash.classList.add('on');
   try{if(navigator.vibrate&&!(typeof muted!=='undefined'&&muted))navigator.vibrate([140,70,140])}catch(e){}}
 let chatUnread=0;
-function setChatMin(v){const c=$('chat');c.classList.toggle('min',v);try{localStorage.setItem('sl_chat_min',v?'1':'0')}catch(e){}
+let chatPref=null;try{chatPref=localStorage.getItem('sl_chat_min')}catch(e){}
+// أول مرة (بدون اختيار محفوظ): بالحية ودرج ولودو، على موبايل عمودي قصير، تبدأ الدردشة مصغّرة ليكبر اللوح. المافيا والمحيبس تبقى مفتوحة لأن النقاش أساسي فيهم.
+function chatAutoMin(id){if(chatPref!==null)return;$('chat').classList.toggle('min',(id==='game'||id==='ludo')&&innerWidth/innerHeight<1.25&&innerHeight<760)}
+function setChatMin(v){chatPref=v?'1':'0';const c=$('chat');c.classList.toggle('min',v);try{localStorage.setItem('sl_chat_min',v?'1':'0')}catch(e){}
   if(!v){chatUnread=0;$('chatUnread').textContent='';const lg=$('log');lg.scrollTop=lg.scrollHeight}
   fitBoard()}
-try{if(localStorage.getItem('sl_chat_min')==='1')$('chat').classList.add('min')}catch(e){}
+if(chatPref==='1')$('chat').classList.add('min');
 $('chatTog').onclick=()=>setChatMin(!$('chat').classList.contains('min'));
-function show(id){if((id==='home'||id==='menu')&&effKey){envApplied='';applyTheme(themeKey)}
+function show(id){chatAutoMin(id);if((id==='home'||id==='menu')&&effKey){envApplied='';applyTheme(themeKey)}
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
   document.documentElement.classList.toggle('lock',id==='game');if(id==='game')window.scrollTo(0,0);
   if(id!=='game'&&id!=='ludo'){$('chat').style.height='';$('chat').style.minHeight=''}else fitBoard();
