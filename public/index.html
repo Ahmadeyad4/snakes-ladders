@@ -1239,6 +1239,7 @@ function s3build(ty,col){
   const T=THREE,P=S3_T[ty],G=S3.G,st=P.style,leg=P.leg,tor=P.tor,tr=P.tr,hr=P.hr;
   const M=(c,sh)=>new T.MeshPhongMaterial({color:c,shininess:sh||18,specular:0x2a2a2a});
   const mat={skin:M(P.skin),hair:M(P.hair,40),cloth:M(col,30),pants:M(P.pants||0x333333),c2:M(P.c2),shoe:M(0x2a1c14,10),dark:M(0x151515,60),wood:M(0x6b4a2b,10),blush:M(0xf29a9a,8),gold:M(0xe0b84a,70),lip:M(0xc2384a,40),pearl:M(0xf4efe6,90),mouth:M(0xb5524f,20),white:M(0xffffff,90)};
+  mat.skin.emissive.setHex(0x3a281d);
   const g=new T.Group(),body=new T.Group();g.add(body);
   const add=(par,geo,m,px,py,pz,sx,sy,sz)=>{const o=new T.Mesh(geo,m);o.position.set(px,py,pz);o.scale.set(sx,sy==null?sx:sy,sz==null?sx:sz);o.frustumCulled=false;par.add(o);return o};
   const limb=(par,px,py,len,r,m,endM,endR)=>{const j=new T.Group();j.position.set(px,py,0);par.add(j);add(j,G.cyl,m,0,-len/2,0,r,len,r);if(endM)add(j,G.sph,endM,0,-len,0,endR||r*1.15);return j};
@@ -1293,10 +1294,10 @@ function s3build(ty,col){
   }
   if(st==='woman'){
     for(const sd of[-1,1]){
-      add(body,G.sph,mat.dark,sd*hr*.34,headY+hr*.0,hr*.905,.022,.029,.015);                   // عيون
+      add(body,G.sph,mat.dark,sd*hr*.34,headY+hr*.0,hr*.905,.016,.022,.013);                   // عيون
       add(body,G.sph,mat.white,sd*hr*.34+.008,headY+hr*.06,hr*.955,.009);
-      const lash=add(body,G.box,mat.dark,sd*hr*.4,headY+hr*.19,hr*.88,.05,.008,.01);lash.rotation.z=sd*.3; // رموش
-      const brow=add(body,G.box,mat.hair,sd*hr*.36,headY+hr*.3,hr*.86,.04,.006,.008);brow.rotation.z=sd*.18; // حواجب رفيعة
+      const lash=add(body,G.box,mat.dark,sd*hr*.46,headY+hr*.13,hr*.89,.018,.006,.008);lash.rotation.z=-sd*.5; // رمش خفيف بطرف العين
+      const brow=add(body,G.box,mat.hair,sd*hr*.36,headY+hr*.3,hr*.86,.036,.005,.007);brow.rotation.z=-sd*.12; // حواجب رفيعة
       add(body,G.sph,mat.blush,sd*hr*.56,headY-hr*.25,hr*.78,.028,.016,.01);                    // خدود
       add(body,G.sph,mat.gold,sd*hr*.93,headY-hr*.42,hr*.22,.017);                              // أقراط
       add(body,G.sph,mat.gold,sd*hr*.93,headY-hr*.55,hr*.22,.011);
