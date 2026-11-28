@@ -341,9 +341,27 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 .ltok:not(.bt) svg{position:absolute;left:-12%;width:124%;bottom:-18%;height:auto;overflow:visible;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))}
 .ltok:not(.bt).legal svg{filter:drop-shadow(0 0 3px #ffb703) drop-shadow(0 0 6px #ffb703)}
 .ltok:not(.bt).target svg{filter:drop-shadow(0 0 3px #ff3b3b) drop-shadow(0 0 6px #ff3b3b)}
-#lDice{background:linear-gradient(145deg,#fffdf3,#eadfc2 70%,#d8caa4);color:#2a1d0c;border-radius:20px;
-  box-shadow:0 6px 0 #a8956a,0 12px 18px rgba(0,0,0,.55),inset 0 3px 3px #fff,inset 0 -5px 9px rgba(120,90,30,.25)}
-#lDice:active{transform:translateY(3px) scale(.96)}
+#lDice{background:none!important;box-shadow:none;border-radius:0;perspective:420px;overflow:visible}
+#lDice:active{transform:scale(.94)}
+#lDice.go{box-shadow:none;filter:drop-shadow(0 0 5px #ffb703) drop-shadow(0 0 12px #ffb703)}
+#lDice.rolling{animation:none}
+#lDice .dscene{position:absolute;left:50%;top:50%;width:0;height:0;transform-style:preserve-3d;pointer-events:none}
+#lDice .dscene::after{content:'';position:absolute;left:-30px;top:25px;width:60px;height:14px;border-radius:50%;background:radial-gradient(ellipse,rgba(0,0,0,.55),transparent 70%);transform:translateZ(-30px)}
+#lDice .dscene.toss{animation:dtoss .68s cubic-bezier(.3,.1,.4,1)}
+@keyframes dtoss{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-26px) scale(1.18)}60%{transform:translateY(0) scale(1)}78%{transform:translateY(-7px) scale(1.04)}100%{transform:translateY(0) scale(1)}}
+#lDice .dcube{position:absolute;left:-28px;top:-28px;width:56px;height:56px;transform-style:preserve-3d;transition:transform .68s}
+#lDice .df{position:absolute;inset:0;display:grid;grid-template:repeat(3,1fr)/repeat(3,1fr);padding:8px;box-sizing:border-box;border-radius:11px;
+  background:linear-gradient(145deg,#fffef6,#ece1c4 70%,#dccfa8);box-shadow:inset 0 0 0 1.5px rgba(160,130,60,.35),inset 0 -4px 8px rgba(120,90,30,.22),inset 0 3px 4px #fff;backface-visibility:hidden}
+#lDice .df b{display:block;place-self:center;width:9px;height:9px;border-radius:50%}
+#lDice .df b.on{background:radial-gradient(circle at 35% 30%,#555,#1a1208 70%);box-shadow:inset 0 1px 1px rgba(255,255,255,.25)}
+#lDice .df b.on.r{background:radial-gradient(circle at 35% 30%,#ff7a7a,#c1121f 70%);width:12px;height:12px}
+#lDice .f1{transform:translateZ(28px)}
+#lDice .f6{transform:rotateY(180deg) translateZ(28px)}
+#lDice .f3{transform:rotateY(90deg) translateZ(28px)}
+#lDice .f4{transform:rotateY(-90deg) translateZ(28px)}
+#lDice .f2{transform:rotateX(90deg) translateZ(28px)}
+#lDice .f5{transform:rotateX(-90deg) translateZ(28px)}
+@media (prefers-reduced-motion:reduce){#lDice .dscene.toss{animation:none}}
 /* ===== لعبة المافيا ===== */
 .tile.g3{background:linear-gradient(145deg,#9a63e8,#3a1c6e)}
 #lobby{overflow-y:auto;justify-content:safe center}
@@ -1987,16 +2005,15 @@ function renderLudo(){
     const me=room.players[room.you];
     ((me&&me.traps)||[]).forEach(ri=>{const c=LRING[ri];if(!c)return;const d=document.createElement('div');d.className='ltrap';d.textContent='🪤';d.style.left=((c[0]+.5)/15*100)+'%';d.style.top=((c[1]+.5)/15*100)+'%';trl.appendChild(d)});
   }
-  if(!animating&&room.dice>0)$('lDice').textContent=FACES[room.dice-1];
+  if(!animating&&room.dice>0)setLDie(room.dice,false);
   fitBoard();
   updateEnd();
 }
 async function ludoRollAnim(m){
   animating=true;renderLudo();
-  const dice=$('lDice');dice.classList.add('rolling');
-  sfx.dice();
-  for(let k=0;k<9;k++){dice.textContent=FACES[Math.floor(Math.random()*6)];sfx.rattle();await sleep(75)}
-  dice.classList.remove('rolling');dice.textContent=FACES[m.dice-1];sfx.land();
+  sfx.dice();setLDie(m.dice,true);
+  for(let k=0;k<9;k++){sfx.rattle();await sleep(75)}
+  sfx.land();
   await sleep(300);
   if(m.pass){toast(m.why==='six3'?'٣ ستات؟! الحظ زايد عليك 😂 ضاع دورك':'لا توجد حركة متاحة');sfx.bad();await sleep(700)}
   else if(m.dice===6){toast('🎉 سته! عندك رمية إضافية');await sleep(450)}
@@ -2110,6 +2127,27 @@ $('inviteBtn').onclick=openPick;
 document.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>openMenu(b.dataset.game));
 $('menuBack').onclick=()=>show('home');
 $('hFriends').onclick=openAdd;
+// ---------- نرد لودو 3D حقيقي (مكعب CSS) ----------
+let _dx=0,_dy=0;
+const DBASE={1:[0,0],6:[0,180],2:[-90,0],5:[90,0],3:[0,-90],4:[0,90]};
+const DPIPS={1:[4],2:[0,8],3:[0,4,8],4:[0,2,6,8],5:[0,2,4,6,8],6:[0,2,3,5,6,8]};
+function ldieBuild(){
+  const b=$('lDice');let h='<span class="dscene"><span class="dcube">';
+  for(let v=1;v<=6;v++){h+='<i class="df f'+v+'" aria-hidden="true">';for(let k=0;k<9;k++)h+='<b'+(DPIPS[v].includes(k)?(v===1?' class="on r"':' class="on"'):'')+'></b>';h+='</i>'}
+  b.innerHTML=h+'</span></span>';setLDie(1,false);
+}
+function setLDie(v,roll){
+  const c=document.querySelector('#lDice .dcube');if(!c)return;const b=DBASE[v]||[0,0];
+  if(roll){
+    _dx=Math.ceil(_dx/360)*360+720+b[0];_dy=Math.ceil(_dy/360)*360+1080+b[1];
+    c.style.transition='transform .68s cubic-bezier(.15,.7,.25,1)';
+    const sc=c.parentNode;sc.classList.remove('toss');void sc.offsetWidth;sc.classList.add('toss');
+  }else{
+    _dx=Math.round(_dx/360)*360+b[0];_dy=Math.round(_dy/360)*360+b[1];c.style.transition='none';
+  }
+  c.style.transform='rotateX('+_dx+'deg) rotateY('+_dy+'deg)';
+}
+ldieBuild();
 $('lDice').onclick=()=>{if(ludoCanRoll)tx({t:'lroll'})};
 $('pickAdd').onclick=()=>{$('pick').classList.remove('on');openAdd()};
 document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>b.closest('.modal').classList.remove('on'));
