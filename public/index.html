@@ -1264,11 +1264,14 @@ function s3load(){
   });
 }
 function s3sprite(ty,col){const k=ty+col;let e=S3C.cache[k];
-  if(!e){const c=window.CHARS[ty],cv=document.createElement('canvas');cv.width=c.w;cv.height=c.h;e=S3C.cache[k]={k,ty,col,cv,ctx:cv.getContext('2d'),tex:null}}return e}
+  if(!e){const c=window.CHARS[ty],mk=()=>{const cv=document.createElement('canvas');cv.width=c.w;cv.height=c.h;return{cv,ctx:cv.getContext('2d'),tex:null}};
+    const f=mk();e=S3C.cache[k]={k,ty,col,cv:f.cv,ctx:f.ctx,L:[mk(),mk(),mk(),mk()]}}return e}
+// الطبقات: 0 جسم+رأس (الوجه ما ينلمس)، 1 رجل يسار، 2 رجل يمين، 3 قدمين+قاعدة
 function s3paint(e){
   const i=e.ty,im=S3C.img[i],mk=S3C.msk[i];if(!im)return;
-  const c=window.CHARS[i],hs=s3hsl(e.col),h=hs[0],s=Math.min(hs[1],.92),l0=hs[2],out=e.ctx.createImageData(c.w,c.h),o=out.data;
-  for(let p=0,n=c.w*c.h*4;p<n;p+=4){
+  const c=window.CHARS[i],hs=s3hsl(e.col),h=hs[0],s=Math.min(hs[1],.92),l0=hs[2],n=c.w*c.h*4;
+  const out=e.ctx.createImageData(c.w,c.h),o=out.data,ls=e.L.map(l=>l.ctx.createImageData(c.w,c.h));
+  for(let p=0;p<n;p+=4){
     let r=im[p],g=im[p+1],b=im[p+2];const wa=mk[p]/255,wb=mk[p+1]/255;
     if(wa>.01||wb>.01){
       const L=(Math.max(r,g,b)+Math.min(r,g,b))/510;
@@ -1276,8 +1279,10 @@ function s3paint(e){
       if(wb>.01){const q=s3rgb(h,s,Math.min(.93,Math.max(.02,l0*L/c.lb)));r+=(q[0]-r)*wb;g+=(q[1]-g)*wb;b+=(q[2]-b)*wb}
     }
     o[p]=r;o[p+1]=g;o[p+2]=b;o[p+3]=im[p+3];
+    const d=ls[Math.round(mk[p+2]/60)&3].data;d[p]=r;d[p+1]=g;d[p+2]=b;d[p+3]=im[p+3];
   }
-  e.ctx.putImageData(out,0,0);if(e.tex)e.tex.needsUpdate=true;
+  e.ctx.putImageData(out,0,0);
+  e.L.forEach((l,k)=>{l.ctx.putImageData(ls[k],0,0);if(l.tex)l.tex.needsUpdate=true});
 }
 // صورة مصغّرة للوجه (لشريط اللاعبين)
 function s3avEl(i,p){
@@ -1332,23 +1337,43 @@ function s3resize(){
 }
 function s3build(ty,col){
   const T=THREE,C=window.CHARS[ty],e=s3sprite(ty,col);
-  if(!e.tex){e.tex=new T.CanvasTexture(e.cv);e.tex.generateMipmaps=false;e.tex.minFilter=T.LinearFilter;e.tex.magFilter=T.LinearFilter}
+  e.L.forEach(l=>{if(!l.tex){l.tex=new T.CanvasTexture(l.cv);l.tex.generateMipmaps=false;l.tex.minFilter=T.LinearFilter;l.tex.magFilter=T.LinearFilter}});
   s3paint(e);
-  const HH=1.5,WW=HH*C.w/C.h,geo=new T.PlaneGeometry(1,1);geo.translate(0,.45,0);
-  const mat=new T.MeshBasicMaterial({map:e.tex,transparent:true,depthTest:false,depthWrite:false,side:T.DoubleSide});
-  const spr=new T.Mesh(geo,mat);spr.scale.set(WW,HH,1);spr.frustumCulled=false;
+  const HH=1.5,WW=HH*C.w/C.h,spr=new T.Group(),meshes=[],geos=[],mats=[];
+  // ترتيب الرسم: قدمين/قاعدة (3) ثم الرجلين (1،2) ثم الجسم (0)
+  [3,1,2,0].forEach(k=>{
+    const geo=new T.PlaneGeometry(1,1,1,k===1||k===2?24:1);geo.translate(0,.45,0);
+    const mat=new T.MeshBasicMaterial({map:e.L[k].tex,transparent:true,depthTest:false,depthWrite:false,side:T.DoubleSide});
+    const m=new T.Mesh(geo,mat);m.frustumCulled=false;m.userData.k=k;
+    if(k===1||k===2)m.userData.base=Array.from(geo.attributes.position.array);
+    spr.add(m);meshes.push(m);geos.push(geo);mats.push(mat);
+  });
+  spr.scale.set(WW,HH,1);
   const g=new T.Group(),body=new T.Group();g.add(body);body.add(spr);
   const root=new T.Group();root.add(g);
   const sh=new T.Mesh(S3.shGeo,new T.MeshBasicMaterial({map:S3.shTex,transparent:true,depthWrite:false,depthTest:false}));sh.position.y=.004;sh.renderOrder=-3;
   const ring=new T.Mesh(S3.ringGeo,new T.MeshBasicMaterial({color:col,transparent:true,opacity:.6,depthWrite:false,depthTest:false,side:T.DoubleSide}));ring.position.y=.006;ring.renderOrder=-2;
   root.add(sh,ring);S3.sc.add(root);
-  return {root,g,body,spr,sh,ring,geo,mat,ek:e.k,tex:e.tex,ww:WW,hh:HH,type:ty,col,
+  return {root,g,body,spr,meshes,geos,mats,sh,ring,ek:e.k,rc:C.rc,ra:C.ra,ww:WW,hh:HH,type:ty,col,
     cx:null,cz:0,tx:0,tz:0,ry:0,hop:-1,sl:null,sc:1,sct:1,fx:1,fxt:1,moving:false};
+}
+// تأرجح الرجلين: الورك شبه ثابت، الركبة أكثر حركة، الكاحل ثابت على القدم
+function s3sway(p,sl,sr){
+  p.meshes.forEach(m=>{
+    const k=m.userData.k;if(k!==1&&k!==2)return;
+    const amt=k===1?sl:sr,base=m.userData.base,pos=m.geometry.attributes.position.array,rc=p.rc,ra=p.ra;
+    for(let v=0;v<pos.length;v+=3){
+      const r=1-(base[v+1]+.5),t=(r-rc)/(ra-rc);let w=0;
+      if(t>0&&t<1)w=Math.min(t/.25,1)*(1-t)/.75;
+      pos[v]=base[v]+amt*w;
+    }
+    m.geometry.attributes.position.needsUpdate=true;
+  });
 }
 function s3free(p){
   if(!p)return;S3.sc.remove(p.root);
-  p.geo.dispose();p.mat.dispose();p.sh.material.dispose();p.ring.material.dispose();
-  if(p.tex)p.tex.dispose();const e=S3C.cache[p.ek];if(e)e.tex=null;
+  p.geos.forEach(x=>x.dispose());p.mats.forEach(x=>x.dispose());p.sh.material.dispose();p.ring.material.dispose();
+  const e=S3C.cache[p.ek];if(e)e.L.forEach(l=>{if(l.tex){l.tex.dispose();l.tex=null}});
 }
 function s3sync(){
   const wrap=$('boardWrap');
@@ -1415,14 +1440,16 @@ function s3tick(now){
     let da=(hd==null?0:hd)-p.ry;da=Math.atan2(Math.sin(da),Math.cos(da));
     p.ry+=da*Math.min(1,dt*14);if(Math.abs(da)>.02)busy=true;
     // حركة الصورة: قفزات المشي، ميلان الصعود، انزلاق على الحية، رقص الفوز، وانعكاس حسب اتجاه المشي
-    let tz=0,by=0,sq=1;
+    let tz=0,by=0,sq=1,sl=0,sr=0;
     if(hd!=null&&Math.abs(Math.sin(hd))>.35)p.fxt=Math.sin(hd)>0?1:-1;
     p.fx+=(p.fxt-p.fx)*Math.min(1,dt*16);if(Math.abs(p.fxt-p.fx)>.02)busy=true;
-    if(pose==='walk'){const s=Math.sin(ph);by=Math.abs(s)*.07;tz=s*.07}
-    else if(pose==='climb'){const s=Math.sin(ph);by=Math.abs(s)*.05;tz=s*.12}
-    else if(pose==='slide'){tz=-.38*p.fxt;by=.02;sq=.94}
-    else if(pose==='win'){const s=Math.sin(now/130);tz=s*.18;sq=1+Math.abs(s)*.05;y=Math.abs(Math.sin(now/200))*.22}
-    p.spr.rotation.z=tz;p.spr.scale.set(p.ww*p.fx,p.hh*sq,1);p.spr.renderOrder=Math.round(p.cz*100);
+    if(pose==='walk'){const s=Math.sin(ph);by=Math.abs(s)*.05;tz=s*.035;sl=s*.075;sr=-s*.075}
+    else if(pose==='climb'){const s=Math.sin(ph);by=Math.abs(s)*.04;tz=s*.07;sl=s*.1;sr=-s*.1}
+    else if(pose==='slide'){tz=-.35*p.fxt;by=.02;sq=.95}
+    else if(pose==='win'){const s=Math.sin(now/130);tz=s*.16;sq=1+Math.abs(s)*.05;sl=s*.06;sr=-s*.06;y=Math.abs(Math.sin(now/200))*.22}
+    s3sway(p,sl,sr);
+    p.spr.rotation.z=tz;p.spr.scale.set(p.ww*p.fx,p.hh*sq,1);
+    const ro=Math.max(0,Math.round(p.cz*100))*4;p.meshes.forEach((m,j)=>m.renderOrder=ro+j);
     p.body.position.y=by+y;
     p.sc+=(p.sct-p.sc)*Math.min(1,dt*10);p.root.scale.setScalar(p.sc*.92);
     p.root.position.set(p.cx,0,p.cz);
