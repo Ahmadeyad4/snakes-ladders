@@ -330,6 +330,20 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 @media (prefers-reduced-motion:reduce){#sStage{transition:none}#boardWrap.quake{animation:none}}
 @media (prefers-reduced-motion:reduce){#lStage{transition:none}#lWrap.quake{animation:none}}
 
+
+/* ===== لودو بتصميم ثلاثي الأبعاد (الوضع الكلاسيكي) ===== */
+#ludo{perspective:1100px}
+#lWrap:not(.war){border:7px solid #4b2e19;border-radius:8px;background:#4b2e19;transform:rotateX(18deg) scale(.95);transform-origin:50% 55%;
+  box-shadow:0 0 0 2px #d9ac4c,0 0 0 4px #2a170a,0 26px 30px -8px rgba(0,0,0,.75),inset 0 0 0 2px #7a4f2b}
+#lWrap:not(.war) #lSvg{border-radius:3px;box-shadow:0 0 0 2px #d9ac4c88}
+.ltok:not(.bt){background:transparent!important;border-color:transparent;overflow:visible}
+.ltok:not(.bt):not(.legal):not(.target){box-shadow:none}
+.ltok:not(.bt) svg{position:absolute;left:-12%;width:124%;bottom:-18%;height:auto;overflow:visible;pointer-events:none;filter:drop-shadow(0 1px 1px rgba(0,0,0,.45))}
+.ltok:not(.bt).legal svg{filter:drop-shadow(0 0 3px #ffb703) drop-shadow(0 0 6px #ffb703)}
+.ltok:not(.bt).target svg{filter:drop-shadow(0 0 3px #ff3b3b) drop-shadow(0 0 6px #ff3b3b)}
+#lDice{background:linear-gradient(145deg,#fffdf3,#eadfc2 70%,#d8caa4);color:#2a1d0c;border-radius:20px;
+  box-shadow:0 6px 0 #a8956a,0 12px 18px rgba(0,0,0,.55),inset 0 3px 3px #fff,inset 0 -5px 9px rgba(120,90,30,.25)}
+#lDice:active{transform:translateY(3px) scale(.96)}
 /* ===== لعبة المافيا ===== */
 .tile.g3{background:linear-gradient(145deg,#9a63e8,#3a1c6e)}
 #lobby{overflow-y:auto;justify-content:safe center}
@@ -410,7 +424,9 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 @media (prefers-reduced-motion:reduce){.mc.tgt,#mSky .stars circle,.rcard,#mNarr.on,.mhint.sleep::after{animation:none}}
 
 .tile.g4{background:linear-gradient(145deg,#ffcf4a,#d9801a);color:#3a2600}
-#chat.hm{height:18dvh;min-height:120px}
+#chat.hm{height:clamp(200px,28dvh,270px);min-height:200px}
+#chat.hm #log{min-height:54px}
+#chat.hm #emojis,#chat.hm #chatRow,#chat.hm #chatTog{flex:none}
 #mheibes{overflow-y:auto;overflow-x:hidden;max-width:520px;width:100%;margin:0 auto;gap:8px;padding:4px 2px 10px}
 #hTop{display:flex;align-items:center;justify-content:space-between;color:var(--muted);font-size:14px;flex:none}
 #hTop button{background:none;color:var(--muted);padding:4px 8px}
@@ -464,9 +480,9 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 .fist.pick{border-color:var(--bad)}
 .fist.shake{animation:hshake .6s ease-in-out}
 #emojis .phr{display:none}
-#chat.hm #emojis{overflow-x:auto;justify-content:flex-start;scrollbar-width:none}
+#chat.hm #emojis{overflow-x:auto;overflow-y:hidden;justify-content:flex-start;scrollbar-width:none;min-height:42px;align-items:center;padding:2px 0}
 #chat.hm #emojis::-webkit-scrollbar{display:none}
-#chat.hm #emojis button{flex:none;padding:4px 9px}
+#chat.hm #emojis button{flex:none;padding:4px 11px;line-height:1.25;min-height:36px}
 #chat.hm #emojis .phr{display:block;font-size:13px;font-weight:700;border-radius:999px;white-space:nowrap;padding:6px 13px}
 .bubble.phr{font-size:13px;font-weight:700;white-space:nowrap;background:#000d;color:#fff;border-radius:12px;padding:4px 10px;top:-32px;z-index:5}
 .fist.sugd{box-shadow:0 0 0 2px #8be9ffaa inset}
@@ -1767,20 +1783,30 @@ function drawLudo(war){
   const NS='http://www.w3.org/2000/svg',svg=$('lSvg');
   svg.innerHTML='';
   if(war){drawWar(svg);return}
-  const el=(t,a)=>{const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);svg.appendChild(e);return e};
-  for(let s=0;s<4;s++){
-    const bx=LBASEORG[s][0],by=LBASEORG[s][1];
-    el('rect',{x:bx,y:by,width:6,height:6,fill:LSEAT[s]});
-    el('rect',{x:bx+1,y:by+1,width:4,height:4,rx:.7,fill:'#fff','fill-opacity':.88});
-    LBASE[s].forEach(p=>el('circle',{cx:p[0],cy:p[1],r:.72,fill:LSEAT[s],'fill-opacity':.5,stroke:LSEAT[s],'stroke-width':.08}));
+  let o='<defs>';
+  for(let q=0;q<4;q++)o+='<linearGradient id="lg'+q+'" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="'+shade(LSEAT[q],.22)+'"/><stop offset=".55" stop-color="'+LSEAT[q]+'"/><stop offset="1" stop-color="'+shade(LSEAT[q],-.3)+'"/></linearGradient>';
+  o+='<radialGradient id="lVg" cx=".5" cy=".5" r=".72"><stop offset=".6" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#2a1a05" stop-opacity=".3"/></radialGradient>'
+   +'<filter id="lPap" x="0" y="0" width="100%" height="100%"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="5"/><feColorMatrix values="0 0 0 0 .35  0 0 0 0 .25  0 0 0 0 .1  0 0 0 .5 -.12"/></filter></defs>';
+  o+='<rect width="15" height="15" fill="#f1e7ca"/>';
+  for(let q=0;q<4;q++){
+    const bx=LBASEORG[q][0],by=LBASEORG[q][1],c=LSEAT[q];
+    o+='<rect x="'+bx+'" y="'+by+'" width="6" height="6" fill="url(#lg'+q+')"/>'
+     +'<rect x="'+(bx+.1)+'" y="'+(by+.1)+'" width="5.8" height="5.8" fill="none" stroke="#f0cf75" stroke-width=".07"/>'
+     +'<rect x="'+(bx+.75)+'" y="'+(by+.75)+'" width="4.5" height="4.5" rx=".55" fill="#000" fill-opacity=".18"/>'
+     +'<rect x="'+(bx+.85)+'" y="'+(by+.85)+'" width="4.3" height="4.3" rx=".55" fill="#fbf5e1" stroke="#d6b552" stroke-width=".09"/>'
+     +'<rect x="'+(bx+1.1)+'" y="'+(by+1.1)+'" width="3.8" height="3.8" rx=".4" fill="none" stroke="'+c+'" stroke-opacity=".35" stroke-width=".04" stroke-dasharray=".2 .12"/>';
+    LBASE[q].forEach(p=>{o+='<circle cx="'+p[0]+'" cy="'+(p[1]+.04)+'" r=".74" fill="#000" fill-opacity=".14"/><circle cx="'+p[0]+'" cy="'+p[1]+'" r=".7" fill="'+c+'" fill-opacity=".22" stroke="'+c+'" stroke-opacity=".8" stroke-width=".07"/><circle cx="'+p[0]+'" cy="'+p[1]+'" r=".42" fill="none" stroke="'+c+'" stroke-opacity=".5" stroke-width=".04"/>'});
   }
   LRING.forEach((c,k)=>{
     const start=k%13===0;
-    el('rect',{x:c[0],y:c[1],width:1,height:1,style:'fill:'+(start?LSEAT[k/13]:'var(--ca)')+';stroke:var(--grid);stroke-width:.05'});
-    if(k%13===8){const t=el('text',{x:c[0]+.5,y:c[1]+.78,'text-anchor':'middle','font-size':.8,fill:'#d9a400'});t.textContent='★'}
+    o+='<rect x="'+c[0]+'" y="'+c[1]+'" width="1" height="1" fill="'+(start?shade(LSEAT[k/13],.05):'#f6eed6')+'" stroke="#b9a678" stroke-width=".05"/>';
+    if(start)o+='<path d="M'+(c[0]+.3)+','+(c[1]+.72)+' L'+(c[0]+.5)+','+(c[1]+.26)+' L'+(c[0]+.7)+','+(c[1]+.72)+'" fill="none" stroke="#fff" stroke-opacity=".85" stroke-width=".09" stroke-linejoin="round"/>';
+    if(k%13===8){const t='<text x="'+(c[0]+.5)+'" y="'+(c[1]+.76)+'" text-anchor="middle" font-size=".78" fill="#c99a12" stroke="#7a5a05" stroke-width=".02">★</text>';o+=t}
   });
-  LHOME.forEach((cells,s)=>cells.forEach(c=>el('rect',{x:c[0],y:c[1],width:1,height:1,fill:LSEAT[s],'fill-opacity':.85,stroke:'#0003','stroke-width':.05})));
-  [[6,6,6,9],[6,6,9,6],[9,6,9,9],[6,9,9,9]].forEach((q,s)=>el('polygon',{points:q[0]+','+q[1]+' '+q[2]+','+q[3]+' 7.5,7.5',fill:LSEAT[s]}));
+  LHOME.forEach((cells,q)=>cells.forEach(c=>{o+='<rect x="'+c[0]+'" y="'+c[1]+'" width="1" height="1" fill="'+shade(LSEAT[q],.06)+'" stroke="#fff" stroke-opacity=".5" stroke-width=".05"/><rect x="'+c[0]+'" y="'+c[1]+'" width="1" height="1" fill="#000" fill-opacity=".08"/>'}));
+  [[6,6,6,9],[6,6,9,6],[9,6,9,9],[6,9,9,9]].forEach((q,i)=>{o+='<polygon points="'+q[0]+','+q[1]+' '+q[2]+','+q[3]+' 7.5,7.5" fill="url(#lg'+i+')" stroke="#f0cf75" stroke-width=".06" stroke-linejoin="round"/>'});
+  o+='<rect width="15" height="15" filter="url(#lPap)" opacity=".5" pointer-events="none"/><rect width="15" height="15" fill="url(#lVg)" pointer-events="none"/>';
+  svg.innerHTML=o;
 }
 
 // ---------- ساحة المعركة (أرضية وضع المعركة) ----------
@@ -1837,6 +1863,18 @@ function drawWar(svg){
   o+='<rect width="15" height="15" filter="url(#wGrain)" opacity=".45"/><rect width="15" height="15" fill="url(#wVig)"/>';
   svg.innerHTML=o;
 }
+// ---------- بيدق لودو مجسّم (SVG) ----------
+(function(){const d=document.createElement('div');d.setAttribute('aria-hidden','true');d.style.cssText='position:absolute;width:0;height:0;overflow:hidden';
+  d.innerHTML='<svg width="0" height="0"><defs><linearGradient id="pwSh" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#000" stop-opacity=".42"/><stop offset=".32" stop-color="#fff" stop-opacity=".28"/><stop offset=".62" stop-color="#000" stop-opacity=".02"/><stop offset="1" stop-color="#000" stop-opacity=".5"/></linearGradient><radialGradient id="pwHi" cx=".34" cy=".3" r=".62"><stop offset="0" stop-color="#fff" stop-opacity=".95"/><stop offset=".45" stop-color="#fff" stop-opacity=".2"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient><radialGradient id="pwGr"><stop offset="0" stop-color="#000" stop-opacity=".55"/><stop offset="1" stop-color="#000" stop-opacity="0"/></radialGradient></defs></svg>';
+  document.body.appendChild(d)})();
+function pawnSVG(c){
+  const body='M5 53 Q5 46 13 44 Q17 37 15 29 Q11 26 14 23 L26 23 Q29 26 25 29 Q23 37 27 44 Q35 46 35 53 Z';
+  return '<svg viewBox="0 0 40 60" aria-hidden="true"><ellipse cx="20" cy="54" rx="18" ry="5.5" fill="url(#pwGr)"/>'
+   +'<path d="'+body+'" fill="'+c+'"/><path d="'+body+'" fill="url(#pwSh)"/>'
+   +'<ellipse cx="20" cy="24" rx="8.5" ry="2.6" fill="#000" fill-opacity=".28"/>'
+   +'<circle cx="20" cy="14" r="10" fill="'+c+'"/><circle cx="20" cy="14" r="10" fill="url(#pwSh)"/><circle cx="20" cy="14" r="10" fill="url(#pwHi)"/>'
+   +'<path d="'+body+'" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="20" cy="14" r="10" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1"/></svg>';
+}
 drawLudo(false);
 function placeLudo(){
   if(!room||!room.players.some(p=>p.tokens))return;
@@ -1874,10 +1912,7 @@ function placeLudo(){
       else{const pv=(room.pend||[]).find(v=>(lb[v]||[]).includes(it.t));if(pv!=null)val=pv}
       if(val==null)return;
       const to=it.r===-1?0:it.r+val,xy=lpos(seat,to,it.t),k=xy[0]+','+xy[1],c=it.color;
-      dh+='<line class="ldl" data-t="'+it.t+'" x1="'+it.c0[0]+'" y1="'+it.c0[1]+'" x2="'+xy[0]+'" y2="'+xy[1]+'" stroke="'+c+'" stroke-width=".13" stroke-linecap="round" stroke-dasharray=".02 .3"/>';
       if(drawn[k])return;drawn[k]=1;
-      dh+=to>55?'<circle class="ldp" cx="'+xy[0]+'" cy="'+xy[1]+'" r=".42" fill="'+c+'" fill-opacity=".3" stroke="#fff" stroke-width=".1" stroke-dasharray=".25 .15"/>'
-        :'<rect class="ldp" x="'+(xy[0]-.5)+'" y="'+(xy[1]-.5)+'" width="1" height="1" rx=".1" fill="'+c+'" fill-opacity=".3" stroke="#fff" stroke-width=".12" stroke-dasharray=".28 .14"/>';
       if(room.mode!=='battle'&&to<=50){
         const ri=(13*seat+to)%52;
         if(ri%13!==0&&ri%13!==8){
@@ -1893,7 +1928,7 @@ function placeLudo(){
     if(!e){e=document.createElement('button');e.className='ltok';box.appendChild(e)}
     const bt=room.mode==='battle';
     const hpv=bt&&room.players[it.i].hp?room.players[it.i].hp[it.t]:0;
-    const html=bt?soldierSVG(it.t,it.color)+(it.r>=0&&hpv?'<span class="hp">'+'♥'.repeat(hpv)+'</span>':''):'';
+    const html=bt?soldierSVG(it.t,it.color)+(it.r>=0&&hpv?'<span class="hp">'+'♥'.repeat(hpv)+'</span>':''):pawnSVG(it.color);
     if(e.dataset.h!==html){e.innerHTML=html;e.dataset.h=html}
     e.title=bt?CLS_NAME[it.t]:'';
     e.classList.toggle('bt',bt);
