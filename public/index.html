@@ -12,7 +12,7 @@
   --ca:#cdeee0; --cb:#bfe0f3; --cend:#ffcf4a; --frame:#ffcf4a; --num:#1b2a3acc; --grid:rgba(30,60,90,.5); --muted:#9aa3d6; --bad:#ff6b81;
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html,body{margin:0;height:100%;background:var(--ink);color:var(--text);
+html,body{margin:0;height:100%;max-width:100%;overflow-x:hidden;background:var(--ink);color:var(--text);
   font-family:"Segoe UI",Tahoma,"Noto Sans Arabic",system-ui,sans-serif;overscroll-behavior:none}
 body{display:flex;flex-direction:column;height:100dvh;padding:env(safe-area-inset-top) 4px env(safe-area-inset-bottom)}
 button{font:inherit;color:inherit;border:0;cursor:pointer}
@@ -1032,7 +1032,7 @@ function fitBoard(){
   const L=$('ludo').classList.contains('on');
   if(!L&&!$('game').classList.contains('on'))return;
   const ids=L?['lTop','lChips','lCtrl','lWrap']:['top','chips','ctrl','boardWrap'];
-  const vw=document.documentElement.clientWidth,vh=window.innerHeight,land=vw/vh>=1.25;
+  const vvp=window.visualViewport,vw=Math.min(document.documentElement.clientWidth,document.body.clientWidth||1e5,vvp?vvp.width:1e5),vh=Math.min(window.innerHeight,document.body.clientHeight||1e5,vvp?vvp.height:1e5),land=vw/vh>=1.25;
   const cs=getComputedStyle(document.body),pad=parseFloat(cs.paddingTop)+parseFloat(cs.paddingBottom);
   let fixed=$(ids[0]).offsetHeight+$(ids[1]).offsetHeight+$(ids[2]).offsetHeight+24+pad;
   let size;
@@ -1044,7 +1044,7 @@ function fitBoard(){
   $('chat').style.minHeight=(!land&&L)?'130px':'';
   $('chat').style.height=land?'':Math.max(L?130:150,Math.floor(vh-fixed-size))+'px';
 }
-window.addEventListener('resize',fitBoard);
+window.addEventListener('resize',fitBoard);if(window.visualViewport)window.visualViewport.addEventListener('resize',fitBoard);
 if(window.ResizeObserver){const ro=new ResizeObserver(()=>fitBoard());['top','chips','ctrl','lTop','lChips','lCtrl'].forEach(id=>{const e=document.getElementById(id);if(e)ro.observe(e)})}
 window.addEventListener('orientationchange',()=>setTimeout(fitBoard,200));
 const turnFlash=document.createElement('div');turnFlash.id='turnFlash';document.body.appendChild(turnFlash);
