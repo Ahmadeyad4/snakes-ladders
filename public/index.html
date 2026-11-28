@@ -536,6 +536,58 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
   .fist{font-size:34px;min-height:60px;padding:6px 0 4px}
   #hAct{padding-top:8px}
 }
+
+/* ===== المتجر والعملات ===== */
+.cashrow{display:flex;gap:10px;align-items:stretch}
+.cashrow>*{flex:1}
+.coinpill{background:var(--panel);border-radius:14px;padding:12px;font-size:16px;color:var(--gold);font-weight:800;display:flex;align-items:center;justify-content:center;gap:6px;white-space:nowrap}
+#badgeS{margin-inline-start:6px;font-size:15px}
+#badgeS:empty{display:none}
+#shopp .card{width:min(100%,420px)}
+#shopp .card>*{flex:none}
+.shophead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.coinbadge{background:var(--panel2);border-radius:999px;padding:6px 12px;font-size:15px;color:var(--gold);font-weight:800;white-space:nowrap}
+.tabs{display:flex;gap:6px}
+.tab{flex:1;background:var(--panel2);color:var(--muted);border-radius:12px;padding:9px 4px;font-size:13px;font-weight:700}
+.tab.on{background:var(--gold);color:#2a2100}
+.shopbody{display:flex;flex-direction:column;gap:8px;min-height:120px}
+.sgroup{color:var(--muted);font-size:12px;margin:8px 2px 0}
+.sitem{display:flex;align-items:center;gap:10px;background:var(--panel2);border-radius:14px;padding:10px}
+.sitem .ic{font-size:26px;width:38px;text-align:center;flex:none}
+.sitem .tx{flex:1;min-width:0}
+.sitem .tx b{display:block;font-size:14px}
+.sitem .tx small{color:var(--muted);font-size:12px;display:block;line-height:1.35}
+.sitem .tx small.left{color:#7ee0d4}
+.sitem button{flex:none;padding:8px 12px;border-radius:12px;font-size:13px;font-weight:700;background:var(--gold);color:#2a2100;white-space:nowrap}
+.sitem button:disabled{opacity:.45}
+.sitem button.alt{background:var(--panel);color:var(--text)}
+.sitem button.on{background:#2ec4b6;color:#062a27}
+.dailybox{background:linear-gradient(135deg,#3b2f7a,#2d3470);border-radius:14px;padding:10px 12px;display:flex;align-items:center;gap:10px;font-size:13px}
+.dailybox .tx{flex:1;min-width:0}
+.dailybox .tx small{display:block;color:var(--muted);font-size:12px}
+.dailybox button{flex:none;padding:9px 12px;border-radius:12px;font-weight:800;font-size:13px;background:var(--gold);color:#2a2100}
+.dailybox button:disabled{opacity:.45}
+#winCoins{display:none;margin:0;font-size:20px;font-weight:800;color:var(--gold)}
+#winCoins.on{display:block}
+/* زينة الأسماء */
+.nm-c_gold{color:#ffd700}
+.nm-c_mint{color:#5eead4}
+.nm-c_pink{color:#ff8fab}
+.nm-c_rainbow{background:linear-gradient(90deg,#ff5f6d,#ffc371,#f9f871,#6bffb8,#5ec8ff,#c58bff,#ff5f6d);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent;animation:nmrb 3s linear infinite}
+@keyframes nmrb{to{background-position:200% 0}}
+.chip.fr-f_gold,.slot.fr-f_gold{border-color:#e8b923;box-shadow:0 0 0 1px #e8b92355}
+.chip.fr-f_fire,.slot.fr-f_fire{border-color:#ff7a18;box-shadow:0 0 10px #ff5400aa;animation:frfire 1.1s ease-in-out infinite alternate}
+@keyframes frfire{from{box-shadow:0 0 5px #ff5400aa}to{box-shadow:0 0 14px 2px #ffb703cc}}
+.chip.au-a_glow,.slot.au-a_glow{filter:drop-shadow(0 0 6px rgba(94,234,212,.95))}
+@media (prefers-reduced-motion:reduce){.nm-c_rainbow,.chip.fr-f_fire,.slot.fr-f_fire{animation:none}}
+/* مظاهر النرد */
+#dice[data-sk="d_gold"] .df,#lDice[data-sk="d_gold"] .df{background:linear-gradient(145deg,#fff3b8,#f2c230 60%,#c8921a);box-shadow:inset 0 0 0 1.5px rgba(150,100,10,.5),inset 0 -4px 8px rgba(120,80,0,.3),inset 0 3px 4px #fff8}
+#dice[data-sk="d_ruby"] .df,#lDice[data-sk="d_ruby"] .df{background:linear-gradient(145deg,#ff8f8f,#c1121f 62%,#7d0c14);box-shadow:inset 0 0 0 1.5px rgba(80,0,10,.5),inset 0 -4px 8px rgba(60,0,10,.35),inset 0 3px 4px #ffffff55}
+#dice[data-sk="d_ruby"] .df b.on,#lDice[data-sk="d_ruby"] .df b.on,#dice[data-sk="d_ruby"] .df b.on.r,#lDice[data-sk="d_ruby"] .df b.on.r{background:radial-gradient(circle at 35% 30%,#fff,#ffd9dc 70%);box-shadow:none}
+#dice[data-sk="d_neon"] .df,#lDice[data-sk="d_neon"] .df{background:linear-gradient(145deg,#1a2342,#0a0f24 70%);box-shadow:inset 0 0 0 1.5px #22e6ff,inset 0 0 10px #22e6ff88}
+#dice[data-sk="d_neon"] .df b.on,#lDice[data-sk="d_neon"] .df b.on,#dice[data-sk="d_neon"] .df b.on.r,#lDice[data-sk="d_neon"] .df b.on.r{background:#22e6ff;box-shadow:0 0 6px 2px #22e6ffcc}
+#dice[data-sk="d_ice"] .df,#lDice[data-sk="d_ice"] .df{background:linear-gradient(145deg,#f4fcff,#a6e0ff 65%,#6cb7e8);box-shadow:inset 0 0 0 1.5px rgba(40,110,170,.45),inset 0 -4px 8px rgba(30,90,150,.25),inset 0 3px 4px #fff}
+#dice[data-sk="d_ice"] .df b.on,#lDice[data-sk="d_ice"] .df b.on,#dice[data-sk="d_ice"] .df b.on.r,#lDice[data-sk="d_ice"] .df b.on.r{background:radial-gradient(circle at 35% 30%,#2b6a9c,#0b3a5c 70%)}
 </style>
 <script src="/three.min.js" async onload="try{l3ready()}catch(e){}try{s3ready()}catch(e){}"></script>
 </head>
@@ -554,8 +606,9 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
       <button class="tile g4" data-game="mheibes"><span class="ic">💍</span>محيبس</button>
       <button class="tile g3" data-game="mafia"><span class="ic">🕵️</span>مافيا</button>
     </div>
+    <div class="cashrow"><button class="btn alt" id="hShop">🛒 المتجر<span id="badgeS"></span></button><div class="coinpill" id="coinPill" title="رصيدك">🪙 <b id="coinVal">0</b></div></div>
     <button class="btn alt" id="hFriends">👥 أصدقائي<span id="badgeH"></span></button>
-    <div class="ver">الإصدار 15</div>
+    <div class="ver">الإصدار 16</div>
   </section>
 
   <section id="menu" class="screen">
@@ -676,6 +729,18 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
   <button class="btn alt" id="pickAdd">➕ إضافة صديق</button>
   <button class="btn alt" data-close>إغلاق</button>
 </div></div>
+<div class="modal" id="shopp"><div class="card">
+  <div class="shophead"><h3>🛒 المتجر</h3><span class="coinbadge">🪙 <b id="shopCoins">0</b></span></div>
+  <div class="dailybox" id="dailyBox"></div>
+  <div class="tabs">
+    <button class="tab on" data-tab="perm">♾️ دائمة</button>
+    <button class="tab" data-tab="temp">⏳ مؤقتة</button>
+    <button class="tab" data-tab="mine">🎒 أغراضي</button>
+  </div>
+  <div class="shopbody" id="shopList"></div>
+  <div class="sub" id="shopNote"></div>
+  <button class="btn alt" data-close>إغلاق</button>
+</div></div>
 <div class="modal" id="sndp"><div class="card">
   <h3>🔊 الأصوات</h3>
   <div id="sndList"></div>
@@ -712,7 +777,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 <div class="modal" id="inv"><div class="card"><h3 id="invText"></h3><div class="row"><button class="btn" id="invYes">قبول</button><button class="btn alt" id="invNo">رفض</button></div></div></div>
 <div id="net">⚠️ انقطع الاتصال، جاري إعادة المحاولة...</div>
 <div id="toast"></div>
-<div id="win"><div><h2 id="winText"></h2><div id="winSub"></div><button class="btn" id="againBtn">لعبة جديدة</button><button class="btn alt" data-leave>خروج</button></div></div>
+<div id="win"><div><h2 id="winText"></h2><div id="winSub"></div><p id="winCoins"></p><button class="btn" id="againBtn">لعبة جديدة</button><button class="btn alt" data-leave>خروج</button></div></div>
 
 <script>
 const SNAKES={16:6,47:26,49:11,56:53,62:19,64:60,87:24,93:73,95:75,98:78};
@@ -1000,6 +1065,8 @@ function drawArt(){
 let social=null,pendingInvite=null,winShown=false,inviteQueue=[],curGame='snakes',curMode='classic',ldisp=[],selVal=null,snipeMode=false,ludoCanRoll=false;
 let extraFor=-1,ws,room=null,disp=[],animating=false,queue=Promise.resolve(),wantRoom=null,retry=null;
 
+let wallet=null,CAT={},wOff=0,shopTab='perm',walletAsked=false;
+
 function connect(){
   const proto=location.protocol==='https:'?'wss':'ws';
   ws=new WebSocket(proto+'://'+location.host);
@@ -1057,6 +1124,7 @@ async function handle(m){
   if(m.t==='room'){
     const wasMine=!!room&&room.state==='play'&&room.turn===room.you;
     room=m;wantRoom=m.code;curGame=m.game||curGame;
+    if(m.state!=='done')$('winCoins').classList.remove('on');
     disp=m.players.map(p=>p.pos);
     ldisp=m.players.map(p=>p.tokens?p.tokens.slice():[-1,-1,-1,-1]);
     selVal=null;snipeMode=false;zoomReset();
@@ -1071,7 +1139,7 @@ async function handle(m){
     render();
   }else if(m.t==='move'){
     animating=true;render();
-    sfx.dice();setDie('dice',m.dice,true);
+    diceSkin('dice',m.i);sfx.dice();setDie('dice',m.dice,true);
     for(let k=0;k<9;k++){sfx.rattle();await sleep(75)}
     sfx.land();
     await sleep(250);
@@ -1127,6 +1195,10 @@ async function handle(m){
     if(m.requests.length>prev){toast('📩 وصلك طلب صداقة جديد');sfx.ding()}
     if($('addp').classList.contains('on'))renderAdd();
     if($('pick').classList.contains('on'))renderPick();
+  }else if(m.t==='wallet'){
+    onWallet(m);
+  }else if(m.t==='reward'){
+    onReward(m);
   }else if(m.t==='invite'){
     pendingInvite=m;sfx.ding();
     $('invText').textContent=m.from.name+' يدعوك للعب '+(m.game==='mheibes'?'محيبس 💍':m.game==='mafia'?'مافيا 🕵️':m.game==='ludo'?(m.mode==='quick'?'لودو سريع ⚡':m.mode==='battle'?'لودو معركة ⚔️':'لودو 🎲'):(m.mode==='battle'?'حية ودرج معركة ⚔️':'حية ودرج 🐍'))+' (حتى '+m.max+' لاعبين)';
@@ -1475,7 +1547,7 @@ function render(){
     for(let i=0;i<room.max;i++){
       const p=room.players[i],d=document.createElement('div');d.className='slot'+(p?'':' empty');
       if(p){const c=document.createElement('span');c.className='dot';c.style.background=p.color;d.append(c,
-        document.createTextNode((room.game==='mheibes'?(i%2?'🔵 ':'🔴 '):'')+(room.mode==='battle'&&room.game!=='ludo'?(p.pick!=null?SBC[p.pick]:'🎲')+' ':'')+((room.game||'snakes')==='snakes'&&room.mode!=='battle'?S3_EMOJI[i%S3_EMOJI.length]+' ':'')+p.name+(i===room.host&&!room.pub?' 👑':'')+(i===room.you?' (أنت)':'')))}
+        nameNode(p,(room.game==='mheibes'?(i%2?'🔵 ':'🔴 '):'')+(room.mode==='battle'&&room.game!=='ludo'?(p.pick!=null?SBC[p.pick]:'🎲')+' ':'')+((room.game||'snakes')==='snakes'&&room.mode!=='battle'?S3_EMOJI[i%S3_EMOJI.length]+' ':''),(i===room.host&&!room.pub?' 👑':'')+(i===room.you?' (أنت)':'')));decorChip(d,p)}
       else d.textContent='بانتظار لاعب...';
       s.appendChild(d);
     }
@@ -1496,9 +1568,10 @@ function render(){
   room.players.forEach((p,i)=>{
     const c=document.createElement('div');c.className='chip'+(i===room.turn&&room.state==='play'?' turn':'')+(p.online?'':' off');c.id='chip'+i;
     const d=document.createElement('span');d.className='dot';d.style.background=p.color;
-    const bt=room.mode==='battle'&&p.cls!=null?' '+SBC[p.cls]+'♥'.repeat(Math.max(0,p.hp)):'';c.append(d,document.createTextNode((room.mode!=='battle'?S3_EMOJI[i%S3_EMOJI.length]+' ':'')+p.name+bt+(p.online?'':' ⚠️')));chips.appendChild(c);
+    const bt=room.mode==='battle'&&p.cls!=null?' '+SBC[p.cls]+'♥'.repeat(Math.max(0,p.hp)):'';c.append(d,nameNode(p,(room.mode!=='battle'?S3_EMOJI[i%S3_EMOJI.length]+' ':''),bt+(p.online?'':' ⚠️')));decorChip(c,p);chips.appendChild(c);
   });
   $('boardWrap').classList.toggle('war',isWar());if(isWar())drawWarBoard();
+  diceSkin('dice',room.turn);
   renderSbAct();placeToks();fitBoard();
   const act=room.state==='play'&&room.phase==='act';
   const mine=room.state==='play'&&room.turn===room.you&&!animating&&!act;
@@ -1624,7 +1697,7 @@ function addSys(text){
 function addLog(m){
   if(!room)return;
   const p=room.players[m.i],log=$('log'),row=document.createElement('p');
-  const b=document.createElement('b');b.textContent=(m.scope==='mafia'?'🕴️ ':m.scope==='dead'?'👻 ':'')+(p?p.name:'؟')+':';if(p)b.style.color=p.color;
+  const b=document.createElement('b');b.textContent=(m.scope==='mafia'?'🕴️ ':m.scope==='dead'?'👻 ':'')+titleOf(p)+(p?p.name:'؟')+':';if(p){const lc=p.look&&p.look.color&&CAT[p.look.color];if(lc)b.className='nm-'+p.look.color;else b.style.color=p.color}
   row.append(b,document.createTextNode(m.text));log.appendChild(row);
   while(log.children.length>80)log.firstChild.remove();
   log.scrollTop=log.scrollHeight;
@@ -1716,7 +1789,7 @@ function renderMafia(){
       +(((ph==='night'&&mf.sel===i)||(ph==='vote'&&mf.vote===i))?' sel':'')+(can?' tgt':''));
     c.type='button';c.id='mc'+i;
     const av=mfEl('span','av',pv.a?MAV[i%MAV.length]:'💀');av.style.setProperty('--pc',p.color);
-    const t=mfEl('span','tx');t.append(mfEl('span','nm',p.name+(i===me?' (أنت)':'')));
+    const t=mfEl('span','tx');t.append(nmEl('nm',p,'',(i===me?' (أنت)':'')));
     let st='';
     if(pv.l)st='🚪 انسحب';else if(pv.r)st=MROLE[pv.r].e+' '+MROLE[pv.r].n;else if(!p.online)st='⚠️ غير متصل';
     if(st)t.append(mfEl('span','st',st));
@@ -1853,7 +1926,7 @@ function renderMheibes(){
   room.players.forEach((p,i)=>{
     const pv=h.players[i];if(pv.t!==h.hiding||pv.l)return;
     const c=mfEl('div','hp'+(i===me?' me':'')+((ph==='hide'&&i===h.hider)?' act':''));c.id='hp'+i;c.style.setProperty('--tc',HTEAM[pv.t].c);
-    const hn=mfEl('div','hn');hn.append(mfEl('span','av',MAV[i%MAV.length]),mfEl('span','nt',p.name+(i===me?' (أنت)':'')));
+    const hn=mfEl('div','hn');hn.append(mfEl('span','av',MAV[i%MAV.length]),nmEl('nt',p,'',(i===me?' (أنت)':'')));
     if(ph==='hide'&&i===h.hider)hn.append(mfEl('small',null,'🤫 المخبّي'));
     c.append(hn);
     const fr=mfEl('div','hf2');
@@ -1878,7 +1951,7 @@ function renderMheibes(){
   room.players.forEach((p,i)=>{
     const pv=h.players[i];if(pv.t!==st||pv.l)return;
     const c=mfEl('div','hc'+(i===me?' me':'')+((ph==='seek'&&i===h.searcher)?' act':''));c.id='hp'+i;c.style.setProperty('--tc',HTEAM[pv.t].c);
-    c.append(mfEl('span',null,(ph==='seek'&&i===h.searcher?'🔎 ':'')+MAV[i%MAV.length]+' '+p.name+(i===me?' (أنت)':'')));sk.append(c);
+    c.append(nmEl(null,p,(ph==='seek'&&i===h.searcher?'🔎 ':'')+MAV[i%MAV.length]+' ',(i===me?' (أنت)':'')));sk.append(c);
   });
   // الأزرار والتلميحات
   const A=$('hAct');A.innerHTML='';
@@ -2313,9 +2386,9 @@ function renderLudo(){
   room.players.forEach((p,i)=>{
     const c=document.createElement('div');c.className='chip'+(i===room.turn&&room.state==='play'?' turn':'')+(p.online?'':' off');c.id='lchip'+i;
     const d=document.createElement('span');d.className='dot';d.style.background=p.color;
-    c.append(d,document.createTextNode(p.name+(p.online?'':' ⚠️')));chips.appendChild(c);
+    c.append(d,nameNode(p,'',(p.online?'':' ⚠️')));decorChip(c,p);chips.appendChild(c);
   });
-  placeLudo();fitBoard();
+  placeLudo();fitBoard();diceSkin('lDice',room.turn);
   const mine=room.state==='play'&&room.turn===room.you&&!animating;
   const hasMove=(room.legal||[]).length>0;
   const canRoll=mine&&room.rollsLeft>0;
@@ -2347,7 +2420,7 @@ function renderLudo(){
 }
 async function ludoRollAnim(m){
   animating=true;renderLudo();
-  sfx.dice();setLDie(m.dice,true);
+  diceSkin('lDice',m.i);sfx.dice();setLDie(m.dice,true);
   for(let k=0;k<9;k++){sfx.rattle();await sleep(75)}
   sfx.land();
   await sleep(300);
@@ -2514,6 +2587,124 @@ HPHRASES.forEach(p=>{const b=document.createElement('button');b.type='button';b.
 function sendChat(){const v=$('chatIn').value.trim();if(!v)return;if(chatBlocked()){toast('🌙 بالليل المافيا فقط يحجون');return}tx({t:'chat',text:v});$('chatIn').value=''}
 $('chatSend').onclick=sendChat;
 $('chatIn').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat()});
+
+// ---------- المتجر والعملات ----------
+const SLOT_NAMES={color:'🎨 ألوان الأسماء',title:'🏷️ الألقاب',dice:'🎲 مظاهر النرد',frame:'🖼️ الإطارات',aura:'✨ التوهج'};
+const SLOT_ORDER=['color','title','dice','frame','aura',null];
+function titleOf(p){const t=p&&p.look&&p.look.title&&CAT[p.look.title];return t&&t.v?t.v+' ':''}
+// اسم اللاعب مع اللقب واللون. pre/post نص عادي قبل وبعد الاسم
+function nameNode(p,pre,post){
+  const w=document.createElement('span'),n=document.createElement('span'),L=p&&p.look;
+  w.append(document.createTextNode((pre||'')+titleOf(p)));
+  n.textContent=p?p.name:'؟';
+  if(L&&L.color&&CAT[L.color])n.className='nm-'+L.color;
+  w.append(n,document.createTextNode(post||''));return w;
+}
+function nmEl(cls,p,pre,post){const s=document.createElement('span');if(cls)s.className=cls;s.append(nameNode(p,pre,post));return s}
+function decorChip(c,p){const L=p&&p.look;if(!L)return;if(L.frame&&CAT[L.frame])c.classList.add('fr-'+L.frame);if(L.aura&&CAT[L.aura])c.classList.add('au-'+L.aura)}
+function diceSkin(id,pi){const e=$(id);if(!e)return;const p=room&&room.players[pi],k=p&&p.look&&p.look.dice;if(k&&CAT[k])e.dataset.sk=k;else delete e.dataset.sk}
+
+const wnow=()=>Date.now()+wOff;
+function fmtLeft(ms){
+  if(ms<=0)return 'انتهى';
+  const m=Math.floor(ms/6e4),h=Math.floor(m/60),d=Math.floor(h/24);
+  if(d>=1)return d+' يوم'+(h%24?' و'+(h%24)+' ساعة':'');
+  if(h>=1)return h+' ساعة'+(m%60?' و'+(m%60)+' دقيقة':'');
+  return Math.max(1,m)+' دقيقة';
+}
+function durLabel(ms){const h=ms/36e5;if(h<24)return h===1?'ساعة':h+' ساعة';const d=h/24;return d===1?'يوم':d+' أيام'}
+function itemActive(it){if(!wallet)return false;return it.kind==='perm'?wallet.owned.includes(it.id):(wallet.temp[it.id]||0)>wnow()}
+function onWallet(m){
+  wallet=m;wOff=m.now-Date.now();walletAsked=false;
+  CAT={};(m.cat||[]).forEach(it=>{CAT[it.id]=it});
+  $('coinVal').textContent=m.coins;
+  $('badgeS').textContent=m.daily.ready?'🎁':'';
+  if($('shopp').classList.contains('on'))renderShop();
+}
+function onReward(m){
+  const el=$('winCoins');
+  let t='🪙 +'+m.total;
+  if(m.mult>1)t+=' (مضاعف ×'+m.mult+' ⚡)';
+  if(m.total===0&&m.capped)t='🪙 وصلت للحد اليومي من الأرباح';
+  else if(m.capped)t+=' — وصلت للحد اليومي';
+  el.textContent=t;el.classList.add('on');sfx.ding();
+}
+function sitem(it,btn,extra){
+  const d=document.createElement('div');d.className='sitem';
+  const ic=document.createElement('span');ic.className='ic';ic.textContent=it.ic;
+  const tx=document.createElement('span');tx.className='tx';
+  const b=document.createElement('b');
+  if(it.slot==='color'){b.className='nm-'+it.id}
+  b.textContent=it.name;
+  const s=document.createElement('small');s.textContent=it.desc;
+  tx.append(b,s);if(extra)tx.append(extra);
+  d.append(ic,tx);if(btn)d.append(btn);return d;
+}
+function mkBtn(text,fn,cls,dis){const b=document.createElement('button');b.type='button';b.textContent=text;if(cls)b.className=cls;b.disabled=!!dis;b.onclick=fn;return b}
+function renderShop(){
+  if(!wallet)return;
+  $('shopCoins').textContent=wallet.coins;
+  document.querySelectorAll('#shopp .tab').forEach(t=>t.classList.toggle('on',t.dataset.tab===shopTab));
+  // المكافأة اليومية
+  const D=wallet.daily,db=$('dailyBox');db.innerHTML='';
+  const tx=document.createElement('span');tx.className='tx';
+  const t1=document.createElement('b');t1.textContent='🎁 المكافأة اليومية';
+  const t2=document.createElement('small');
+  const left=D.ready?0:D.in-(wnow()-wallet.now);
+  const ready=D.ready||left<=0;
+  t2.textContent=ready?('+'+D.next+' 🪙'+(D.streak?' — تتابعك '+D.streak+' يوم، لا تقطعه!':' — ابدأ تتابعك اليوم')):('القادمة بعد '+fmtLeft(left)+' (+'+D.next+' 🪙)');
+  tx.append(t1,t2);db.append(tx,mkBtn(ready?'استلم':'🔒',()=>tx_daily(),null,!ready));
+  const L=$('shopList');L.innerHTML='';
+  const note=$('shopNote');
+  if(shopTab==='mine'){
+    const mine=(wallet.cat||[]).filter(itemActive);
+    if(!mine.length){const e=document.createElement('div');e.className='empty-note';e.textContent='ما عندك أغراض بعد. اشتر من تبويب الدائمة أو المؤقتة 🛒';L.append(e)}
+    SLOT_ORDER.forEach(sl=>{
+      const arr=mine.filter(it=>(it.slot||null)===sl);if(!arr.length)return;
+      const g=document.createElement('div');g.className='sgroup';g.textContent=sl?SLOT_NAMES[sl]:'⚡ تعزيزات';L.append(g);
+      arr.forEach(it=>{
+        let ex=null;
+        if(it.kind==='temp'){ex=document.createElement('small');ex.className='left';ex.textContent='⏳ باقي '+fmtLeft(wallet.temp[it.id]-wnow())}
+        let btn=null;
+        if(it.slot){const eq=wallet.eq[it.slot]===it.id;btn=mkBtn(eq?'مجهّز ✓':'جهّز',()=>tx_equip(it.slot,eq?null:it.id),eq?'on':'alt')}
+        L.append(sitem(it,btn,ex));
+      });
+    });
+    note.textContent='الغرض المؤقت ينتهي تلقائياً، والدائم يبقى لك للأبد.';
+    return;
+  }
+  const kind=shopTab;
+  const items=(wallet.cat||[]).filter(it=>it.kind===kind);
+  SLOT_ORDER.forEach(sl=>{
+    const arr=items.filter(it=>(it.slot||null)===sl);if(!arr.length)return;
+    const g=document.createElement('div');g.className='sgroup';g.textContent=sl?SLOT_NAMES[sl]:'⚡ تعزيزات';L.append(g);
+    arr.forEach(it=>{
+      const act=itemActive(it);let ex=null,btn;
+      if(kind==='perm'){
+        btn=act?mkBtn('مملوك ✓',null,'alt',true):mkBtn('🪙 '+it.price,()=>tx_buy(it.id),null,wallet.coins<it.price);
+      }else{
+        ex=document.createElement('small');ex.className='left';
+        ex.textContent='المدة: '+durLabel(it.dur)+(act?' — باقي '+fmtLeft(wallet.temp[it.id]-wnow()):'');
+        btn=mkBtn((act?'تمديد 🪙 ':'🪙 ')+it.price,()=>tx_buy(it.id),null,wallet.coins<it.price);
+      }
+      L.append(sitem(it,btn,ex));
+    });
+  });
+  note.textContent=kind==='perm'?'الأغراض الدائمة تُشترى مرة وحدة وتبقى لك. الزينة فقط، ما تعطي أفضلية باللعب.':'الأغراض المؤقتة تنتهي بعد مدتها، وإعادة الشراء تمدّدها. المضاعف لا يتراكم.';
+}
+function tx_buy(id){tx({t:'shop_buy',id})}
+function tx_equip(slot,id){tx({t:'shop_equip',slot,id})}
+function tx_daily(){tx({t:'daily_claim'})}
+function openShop(){tx({t:'wallet_get'});renderShop();$('shopp').classList.add('on')}
+$('hShop').onclick=openShop;
+$('coinPill').onclick=openShop;
+document.querySelectorAll('#shopp .tab').forEach(b=>b.onclick=()=>{shopTab=b.dataset.tab;renderShop()});
+// تحديث العدادات، وإذا انتهى غرض مؤقت نطلب المحفظة من السيرفر
+setInterval(()=>{
+  if(!wallet)return;
+  if($('shopp').classList.contains('on'))renderShop();
+  if(!walletAsked&&Object.values(wallet.temp).some(e=>e<=wnow())){walletAsked=true;tx({t:'wallet_get'})}
+},15000);
 
 // ---------- الألوان (مظهر واحد ثابت) ----------
 const THEMES={
