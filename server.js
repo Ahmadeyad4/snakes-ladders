@@ -4,6 +4,7 @@ const fs = require('fs');
 const path = require('path');
 const { WebSocketServer } = require('ws');
 const sb = require('./snakes_battle');
+const economy = require('./economy');
 let ludo = null;
 try { ludo = require('./ludo'); } catch (e) { console.error('ludo.js غير موجود، لعبة لودو معطلة:', e.message); }
 let mafia = null;
@@ -167,6 +168,22 @@ function pushSocial(u) {
   const s = online.get(u.id);
   if (s) s.forEach(w => send(w, socialFor(u)));
 }
+// ---------- المحفظة والجوائز ----------
+function pushWallet(u) {
+  const s = online.get(u.id);
+  if (s && s.size) { const v = economy.walletView(u); s.forEach(w => send(w, v)); }
+}
+// تُستدعى مرة وحدة عند انتهاء كل لعبة (من sendRoom)
+function settleRoom(room) {
+  const res = economy.settle(room, tok => users[tok]);
+  if (!res.length) return;
+  saveData();
+  res.forEach(r => {
+    pushWallet(r.u);
+    const s = online.get(r.u.id);
+    if (s) s.forEach(w => send(w, { t: 'reward', win: r.win, base: r.gain, mult: r.mult, total: r.total, capped: r.capped, coins: r.u.eco.coins }));
+  });
+}
 function notifyFriends(u) {
   u.friends.forEach(id => { const f = byId.get(id); if (f) pushSocial(f); });
 }
@@ -202,7 +219,19 @@ function handleSocial(ws, m, token) {
       online.get(u.id).add(ws);
     }
     pushSocial(u);
+    pushWallet(u);
     notifyFriends(u);
+    return true;
+  }
+  if (m.t === 'wallet_get' || m.t === 'shop_buy' || m.t === 'shop_equip' || m.t === 'daily_claim') {
+    const u = ws.user;
+    if (!u) return true;
+    if (m.t === 'wallet_get') { pushWallet(u); return true; }
+    const r = m.t === 'shop_buy' ? economy.buy(u, String(m.id || '').slice(0, 40))
+      : m.t === 'shop_equip' ? economy.equip(u, String(m.slot || '').slice(0, 20), m.id == null ? null : String(m.id).slice(0, 40))
+      : economy.claimDaily(u);
+    if (r.err) send(ws, { t: 'err', msg: r.err }); else { saveData(); send(ws, { t: 'ok', msg: r.msg }); }
+    pushWallet(u);
     return true;
   }
   if (!['friend_add', 'friend_accept', 'friend_decline', 'friend_remove', 'invite'].includes(m.t)) return false;
@@ -311,6 +340,7 @@ function send(ws, msg) {
 }
 
 function sendRoom(room) {
+  const looks = room.players.map(q => (q.token && !q.bot ? economy.lookOf(users[q.token]) : null));
   room.players.forEach((p, i) => {
     send(p.ws, {
       t: 'room',
@@ -338,9 +368,10 @@ function sendRoom(room) {
       rollsLeft: room.rollsLeft || 0,
       reason: room.endReason || null,
       startIn: room.startAt ? Math.max(0, room.startAt - Date.now()) : null,
-      players: room.players.map((q, qi) => ({ name: q.name, color: q.color, pos: q.pos, tokens: q.tokens || null, hp: q.hp == null ? null : q.hp, cls: q.cls == null ? null : q.cls, pick: q.pick == null ? null : q.pick, traps: qi === i ? (q.traps || []) : [], seat: q.seat == null ? null : q.seat, online: !!q.ws || !!q.bot })),
+      players: room.players.map((q, qi) => ({ name: q.name, color: q.color, look: looks[qi], pos: q.pos, tokens: q.tokens || null, hp: q.hp == null ? null : q.hp, cls: q.cls == null ? null : q.cls, pick: q.pick == null ? null : q.pick, traps: qi === i ? (q.traps || []) : [], seat: q.seat == null ? null : q.seat, online: !!q.ws || !!q.bot })),
     });
   });
+  if (room.state === 'done' && !room.rewarded) settleRoom(room);
 }
 
 function broadcast(room, msg) {
@@ -444,6 +475,7 @@ function detach(ws) {
 
 const validCls = v => (Number.isInteger(v) && v >= 0 && v <= 3 ? v : null);
 function initGame(room) {
+  room.rewarded = false; room.startedAt = Date.now();   // لحساب جوائز نهاية اللعبة
   if (room.game === 'ludo') ludo.init(room);
   else if (room.game === 'mafia') mafia.init(room);
   else if (room.game === 'mheibes') mheibes.init(room);
