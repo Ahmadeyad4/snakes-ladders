@@ -1189,7 +1189,7 @@ const S3_T=[
   {style:'man',     leg:.36,tor:.40,tr:.150,hr:.125,skin:0xd9a577,hair:0x2a1b12,pants:0x2d3a55,c2:0xffffff,amp:.75},
   {style:'woman',   leg:.31,tor:.36,tr:.128,hr:.118,skin:0xe6b894,hair:0x2b1810,pants:0,c2:0x2b2b2b,amp:.55},
   {style:'boy',     leg:.25,tor:.28,tr:.118,hr:.132,skin:0xe9b98f,hair:0x5a3418,pants:0x3b5b8c,c2:0xffffff,amp:.95},
-  {style:'girl',    leg:.23,tor:.26,tr:.108,hr:.130,skin:0xf0c4a0,hair:0x3a2012,pants:0,c2:0xffffff,amp:.85},
+  {style:'girl',    leg:.24,tor:.26,tr:.100,hr:.148,skin:0xf0c4a0,hair:0x3a2012,pants:0,c2:0xffffff,amp:.85},
   {style:'oldman',  leg:.30,tor:.34,tr:.140,hr:.120,skin:0xcf9f7a,hair:0xf1f1f1,pants:0x5a4a3a,c2:0xffffff,amp:.42,stoop:.15,cane:1},
   {style:'oldwoman',leg:.27,tor:.31,tr:.125,hr:.115,skin:0xdcb08c,hair:0xcfcfd6,pants:0,c2:0x6d5c4b,amp:.36,stoop:.15,cane:1}
 ];
@@ -1238,7 +1238,7 @@ function s3resize(){
 function s3build(ty,col){
   const T=THREE,P=S3_T[ty],G=S3.G,st=P.style,leg=P.leg,tor=P.tor,tr=P.tr,hr=P.hr;
   const M=(c,sh)=>new T.MeshPhongMaterial({color:c,shininess:sh||18,specular:0x2a2a2a});
-  const mat={skin:M(P.skin),hair:M(P.hair,40),cloth:M(col,30),pants:M(P.pants||0x333333),c2:M(P.c2),shoe:M(0x2a1c14,10),dark:M(0x151515,60),wood:M(0x6b4a2b,10)};
+  const mat={skin:M(P.skin),hair:M(P.hair,40),cloth:M(col,30),pants:M(P.pants||0x333333),c2:M(P.c2),shoe:M(0x2a1c14,10),dark:M(0x151515,60),wood:M(0x6b4a2b,10),blush:M(0xf29a9a,8),gold:M(0xe0b84a,70),lip:M(0xc2384a,40),pearl:M(0xf4efe6,90),mouth:M(0xb5524f,20),white:M(0xffffff,90)};
   const g=new T.Group(),body=new T.Group();g.add(body);
   const add=(par,geo,m,px,py,pz,sx,sy,sz)=>{const o=new T.Mesh(geo,m);o.position.set(px,py,pz);o.scale.set(sx,sy==null?sx:sy,sz==null?sx:sz);o.frustumCulled=false;par.add(o);return o};
   const limb=(par,px,py,len,r,m,endM,endR)=>{const j=new T.Group();j.position.set(px,py,0);par.add(j);add(j,G.cyl,m,0,-len/2,0,r,len,r);if(endM)add(j,G.sph,endM,0,-len,0,endR||r*1.15);return j};
@@ -1250,10 +1250,20 @@ function s3build(ty,col){
   [legL,legR].forEach(l=>{
     add(l,G.sph,mat.shoe,0,-leg+.012,.03,lr*1.25,lr*.75,lr*1.8);
     if(st==='boy')add(l,G.cyl,mat.pants,0,-leg*.2,0,lr*1.2,leg*.42,lr*1.2);
+    if(st==='girl'){add(l,G.cyl,mat.c2,0,-leg*.74,0,lr*1.28,leg*.42,lr*1.28);add(l,G.sph,mat.cloth,0,-leg+.03,.06,lr*.9,lr*.35,lr*.9)}
   });
   // الجذع واللباس
   if(!dressy)add(body,G.tor,mat.cloth,0,leg+tor/2,0,tr,tor,tr*.8);
-  else{
+  else if(st==='girl'){
+    const wy=leg+tor*.40,hem=leg*.50,rb=tr*2.45;
+    add(body,G.tor,mat.cloth,0,(wy+leg+tor)/2,0,tr,leg+tor-wy,tr*.8);           // الصدرية
+    add(body,G.cone,mat.cloth,0,(wy+hem)/2,0,rb,wy-hem,rb*.9);                    // التنورة المنفوشة
+    add(body,G.cyl,mat.c2,0,hem+.014,0,rb*1.02,.034,rb*.92);                      // حاشية بيضاء
+    add(body,G.cyl,mat.c2,0,wy,0,tr*1.02,.035,tr*.82);                            // حزام
+    for(const sd of[-1,1])add(body,G.sph,mat.c2,sd*.05,wy,-tr*.8-.025,.05,.034,.024); // فيونكة ورا
+    add(body,G.sph,mat.c2,0,wy,-tr*.8-.03,.026);
+    add(body,G.cap,mat.c2,0,leg+tor-.045,0,tr*1.3,.1,tr*1.08);                    // ياقة
+  }else{
     const wy=leg+tor*.42,hem=leg*(st==='girl'?.55:.36),rb=tr*(st==='girl'?2.15:2.0),dm=st==='oldwoman'?mat.c2:mat.cloth;
     add(body,G.tor,dm,0,(wy+leg+tor)/2,0,tr,leg+tor-wy,tr*.8);
     add(body,G.cone,dm,0,(wy+hem)/2,0,rb,wy-hem,rb*.9);
@@ -1265,20 +1275,63 @@ function s3build(ty,col){
   const ay=shY-.035,ax=tr+.045,alen=tor*.92,ar=dressy?.034:st==='boy'?.04:.045;
   const armL=limb(body,-ax,ay,alen,ar,old?mat.cloth:mat.skin,mat.skin,ar*1.2),armR=limb(body,ax,ay,alen,ar,old?mat.cloth:mat.skin,mat.skin,ar*1.2);
   if(!old)[armL,armR].forEach(a=>add(a,G.cyl,mat.cloth,0,-alen*.17,0,ar*1.3,alen*.34,ar*1.3));
+  if(st==='girl')[armL,armR].forEach(a=>add(a,G.sph,mat.cloth,0,-.018,0,ar*2.1,ar*1.8,ar*2.1));
   // الرأس والوجه
   const headY=shY+.04+hr*.95;
   add(body,G.cyl,mat.skin,0,shY+.02,0,.04,.08,.04);
-  const head=add(body,G.sph,mat.skin,0,headY,0,hr,hr*1.06,hr);
+  const head=add(body,G.sph,mat.skin,0,headY,0,st==='woman'?hr*.92:hr,hr*1.08,hr);
   for(const s of[-1,1])add(body,G.sph,mat.dark,s*hr*.36,headY+hr*.02,hr*.9,.02,.024,.016);
   add(body,G.sph,mat.skin,0,headY-hr*.1,hr*.99,.022,.02,.02);
+  if(st==='girl'){
+    for(const sd of[-1,1]){
+      add(body,G.sph,mat.dark,sd*hr*.36,headY+hr*.0,hr*.905,.028,.036,.017);                 // عيون أكبر
+      add(body,G.sph,mat.white,sd*hr*.36+.008,headY+hr*.06,hr*.955,.009);                    // لمعة العين
+      const lash=add(body,G.box,mat.dark,sd*hr*.43,headY+hr*.19,hr*.88,.05,.008,.01);lash.rotation.z=sd*.28; // رموش
+      add(body,G.sph,mat.blush,sd*hr*.62,headY-hr*.24,hr*.8,.032,.019,.01);                  // خدود وردية
+    }
+    add(body,G.sph,mat.mouth,0,headY-hr*.44,hr*.9,.022,.009,.01);                            // ثغر صغير
+  }
+  if(st==='woman'){
+    for(const sd of[-1,1]){
+      add(body,G.sph,mat.dark,sd*hr*.34,headY+hr*.0,hr*.905,.022,.029,.015);                   // عيون
+      add(body,G.sph,mat.white,sd*hr*.34+.008,headY+hr*.06,hr*.955,.009);
+      const lash=add(body,G.box,mat.dark,sd*hr*.4,headY+hr*.19,hr*.88,.05,.008,.01);lash.rotation.z=sd*.3; // رموش
+      const brow=add(body,G.box,mat.hair,sd*hr*.36,headY+hr*.3,hr*.86,.04,.006,.008);brow.rotation.z=sd*.18; // حواجب رفيعة
+      add(body,G.sph,mat.blush,sd*hr*.56,headY-hr*.25,hr*.78,.028,.016,.01);                    // خدود
+      add(body,G.sph,mat.gold,sd*hr*.93,headY-hr*.42,hr*.22,.017);                              // أقراط
+      add(body,G.sph,mat.gold,sd*hr*.93,headY-hr*.55,hr*.22,.011);
+    }
+    add(body,G.sph,mat.lip,0,headY-hr*.43,hr*.9,.03,.011,.012);                                 // شفايف حمرا
+    const nk=add(body,G.torus,mat.gold,0,shY-.002,.0,tr*.62);nk.rotation.x=Math.PI/2;nk.scale.z=.1; // عقد
+  }
+  if(st==='oldwoman'){
+    for(const sd of[-1,1]){
+      add(body,G.sph,mat.blush,sd*hr*.56,headY-hr*.28,hr*.78,.026,.015,.01);
+      add(body,G.sph,mat.pearl,sd*hr*.95,headY-hr*.4,hr*.2,.014);                              // أقراط لؤلؤ
+    }
+    add(body,G.sph,mat.lip,0,headY-hr*.45,hr*.9,.026,.01,.011);
+    const nk=add(body,G.torus,mat.pearl,0,shY-.002,.0,tr*.7);nk.rotation.x=Math.PI/2;nk.scale.z=.13; // عقد لؤلؤ
+  }
   // الشعر
   const cap=(hy,hz,sc)=>{const o=add(body,G.cap,mat.hair,0,hy,hz,hr*sc,hr*sc,hr*sc);o.rotation.x=-.6;return o};
   if(st==='man'){cap(headY+hr*.1,-hr*.06,1.08);add(body,G.box,mat.hair,0,headY-hr*.3,hr*.93,.1,.02,.03)}
   else if(st==='boy'){cap(headY+hr*.1,-hr*.05,1.08)}
-  else if(st==='woman'){cap(headY+hr*.1,-hr*.05,1.1);add(body,G.sph,mat.hair,0,headY-hr*.55,-hr*.62,hr*1.0,hr*1.5,hr*.5)}
+  else if(st==='woman'){
+    cap(headY+hr*.1,-hr*.05,1.14);
+    add(body,G.sph,mat.hair,-hr*.15,headY+hr*.6,hr*.5,hr*.85,hr*.22,hr*.4);                    // غرّة مائلة
+    add(body,G.sph,mat.hair,0,headY-hr*.4,-hr*.72,hr*.95,hr*1.1,hr*.38);                      // شعر من ورا (يخلص بمستوى الذقن)
+    for(const sd of[-1,1]){add(body,G.sph,mat.hair,sd*hr*1.0,headY-hr*.65,hr*.0,hr*.26,hr*1.0,hr*.32)} // خصل طويلة على الكتف
+  }
   else if(st==='girl'){
-    cap(headY+hr*.1,-hr*.05,1.1);
-    for(const s of[-1,1]){add(body,G.sph,mat.hair,s*hr*1.05,headY-hr*.25,-hr*.15,hr*.42,hr*.6,hr*.42);add(body,G.sph,mat.cloth,s*hr*.98,headY+hr*.1,-hr*.1,hr*.2)}
+    cap(headY+hr*.1,-hr*.05,1.12);
+    add(body,G.sph,mat.hair,0,headY+hr*.5,hr*.6,hr*.98,hr*.32,hr*.42);                       // غرّة
+    add(body,G.sph,mat.hair,0,headY-hr*.55,-hr*.5,hr*.95,hr*1.35,hr*.5);                     // شعر من ورا
+    for(const sd of[-1,1]){
+      add(body,G.sph,mat.hair,sd*hr*1.0,headY-hr*.28,hr*.02,hr*.2,hr*.6,hr*.3);              // خصلة جنب الوجه
+      add(body,G.sph,mat.hair,sd*hr*1.28,headY-hr*.85,-hr*.1,hr*.3,hr*.85,hr*.3);            // ضفيرة
+      const bow1=add(body,G.sph,mat.cloth,sd*hr*1.12,headY+hr*.02,-hr*.08,hr*.24,hr*.14,hr*.14);bow1.rotation.z=sd*.5; // فيونكة
+      add(body,G.sph,mat.c2,sd*hr*1.12,headY+hr*.02,-hr*.08,hr*.09);
+    }
   }else if(st==='oldman'){
     const t=add(body,G.torus,mat.hair,0,headY-hr*.05,-hr*.1,hr*.95);t.rotation.x=Math.PI/2;
     add(body,G.sph,mat.hair,0,headY-hr*.72,hr*.42,hr*.68,hr*.55,hr*.5);add(body,G.box,mat.hair,0,headY-hr*.3,hr*.94,.11,.022,.03);
