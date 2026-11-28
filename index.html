@@ -154,18 +154,9 @@ body{background:radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70
 .idbox{display:flex;align-items:center;gap:10px;color:var(--muted)}
 .idbox b{color:var(--gold);font-size:28px;letter-spacing:3px;direction:ltr;flex:1;text-align:center}
   .ver{color:var(--muted);text-align:center;font-size:12px;opacity:.7}
-#fx{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:0}
 #screens,#chat{position:relative;z-index:1}
-#fx span{position:absolute;top:-8vh;animation:fall linear infinite;opacity:.85}
 @keyframes fall{0%{transform:translate(0,-10vh) rotate(0)}50%{transform:translate(30px,55vh) rotate(180deg)}100%{transform:translate(-10px,115vh) rotate(360deg)}}
-#fx.twinkle span{animation-name:twinkle;animation-timing-function:ease-in-out}
 @keyframes twinkle{0%,100%{opacity:.15;transform:scale(.7)}50%{opacity:1;transform:scale(1.2)}}
-.themes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.tcard{background:var(--panel2);border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:8px;border:3px solid transparent;font-weight:700}
-.tcard.on{border-color:var(--gold)}
-.tcard .sw{display:grid;grid-template-columns:repeat(4,1fr);width:100%;height:34px;border-radius:8px;overflow:hidden;border:2px solid var(--frm,#fff4)}
-.tcard .ic{font-size:30px;line-height:1}
-#themeBtn2{font-size:18px}
 @media (min-aspect-ratio:5/4){
   body{flex-direction:row;gap:8px}
   #chat{height:auto;width:min(340px,30vw);align-self:stretch}
@@ -279,7 +270,6 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 #net.on{display:block}
 #log p.sys{color:var(--muted);font-style:italic}
 #winSub{color:var(--muted)}
-@media (prefers-reduced-motion:reduce){#fx{display:none}}
 @media (prefers-reduced-motion:reduce){.tok{transition:none}.bubble{animation:none}}
 
 /* ===== وضع المعركة: ساحة حرب + جنود + زوم ===== */
@@ -550,7 +540,6 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 <script src="/three.min.js" async onload="try{l3ready()}catch(e){}try{s3ready()}catch(e){}"></script>
 </head>
 <body>
-<div id="fx" aria-hidden="true"></div>
 <div id="screens">
 
   <section id="home" class="screen on">
@@ -558,7 +547,6 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
     <div class="me">
       <input id="nameIn" maxlength="14" placeholder="اكتب اسمك" autocomplete="off">
       <button class="idpill" id="copyId" aria-label="نسخ رقمك">رقمك <b id="myIdVal">------</b> 📋</button>
-      <button class="idpill" data-themes aria-label="المظهر">🎨</button>
     </div>
     <div class="tiles">
       <button class="tile g1" data-game="snakes"><span class="ic">🐍</span>حية ودرج</button>
@@ -599,7 +587,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
   </section>
 
   <section id="ludo" class="screen">
-    <div id="lTop"><span id="lcode"></span><button data-themes aria-label="المظهر">🎨</button><button class="muteBtn" aria-label="الصوت">🔊</button><button data-leave>خروج</button></div>
+    <div id="lTop"><span id="lcode"></span><button class="muteBtn" aria-label="الصوت">🔊</button><button data-leave>خروج</button></div>
     <div id="lChips"></div>
     <div id="lWrap">
       <div id="lStage">
@@ -648,7 +636,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
   </section>
 
   <section id="game" class="screen">
-    <div id="top"><span id="gcode"></span><button id="themeBtn2" data-themes aria-label="المظهر">🎨</button><button class="muteBtn" aria-label="الصوت">🔊</button><button data-leave>خروج</button></div>
+    <div id="top"><span id="gcode"></span><button class="muteBtn" aria-label="الصوت">🔊</button><button data-leave>خروج</button></div>
     <div id="chips"></div>
     <div id="boardWrap"><div id="sStage">
       <div id="board"></div>
@@ -692,11 +680,6 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
   <h3>🔊 الأصوات</h3>
   <div id="sndList"></div>
   <button class="btn alt" id="sndMute">🔇 كتم الكل</button>
-  <button class="btn alt" data-close>إغلاق</button>
-</div></div>
-<div class="modal" id="themep"><div class="card">
-  <h3>🎨 اختر المظهر</h3>
-  <div class="themes" id="themeList"></div>
   <button class="btn alt" data-close>إغلاق</button>
 </div></div>
 <div class="modal" id="rulesp"><div class="card rules">
@@ -1060,7 +1043,7 @@ function setChatMin(v){chatPref=v?'1':'0';const c=$('chat');c.classList.toggle('
   fitBoard()}
 if(chatPref==='1')$('chat').classList.add('min');
 $('chatTog').onclick=()=>setChatMin(!$('chat').classList.contains('min'));
-function show(id){chatAutoMin(id);if((id==='home'||id==='menu')&&effKey){envApplied='';applyTheme(themeKey)}
+function show(id){chatAutoMin(id);
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
   document.documentElement.classList.toggle('lock',id==='game');if(id==='game')window.scrollTo(0,0);
   if(id!=='game'&&id!=='ludo'){$('chat').style.height='';$('chat').style.minHeight=''}else fitBoard();
@@ -1238,7 +1221,8 @@ function s3resize(){
 function s3build(ty,col){
   const T=THREE,P=S3_T[ty],G=S3.G,st=P.style,leg=P.leg,tor=P.tor,tr=P.tr,hr=P.hr;
   const M=(c,sh)=>new T.MeshPhongMaterial({color:c,shininess:sh||18,specular:0x2a2a2a});
-  const mat={skin:M(P.skin),hair:M(P.hair,40),cloth:M(col,30),pants:M(P.pants||0x333333),c2:M(P.c2),shoe:M(0x2a1c14,10),dark:M(0x151515,60),wood:M(0x6b4a2b,10),blush:M(0xf29a9a,8),mouth:M(0xb5524f,20),white:M(0xffffff,90)};
+  const mat={skin:M(P.skin),hair:M(P.hair,40),cloth:M(col,30),pants:M(P.pants||0x333333),c2:M(P.c2),shoe:M(0x2a1c14,10),dark:M(0x151515,60),wood:M(0x6b4a2b,10),blush:M(0xf29a9a,8),gold:M(0xe0b84a,70),lip:M(0xc2384a,40),pearl:M(0xf4efe6,90),mouth:M(0xb5524f,20),white:M(0xffffff,90)};
+  mat.skin.emissive.setHex(0x3a281d);
   const g=new T.Group(),body=new T.Group();g.add(body);
   const add=(par,geo,m,px,py,pz,sx,sy,sz)=>{const o=new T.Mesh(geo,m);o.position.set(px,py,pz);o.scale.set(sx,sy==null?sx:sy,sz==null?sx:sz);o.frustumCulled=false;par.add(o);return o};
   const limb=(par,px,py,len,r,m,endM,endR)=>{const j=new T.Group();j.position.set(px,py,0);par.add(j);add(j,G.cyl,m,0,-len/2,0,r,len,r);if(endM)add(j,G.sph,endM,0,-len,0,endR||r*1.15);return j};
@@ -1279,7 +1263,7 @@ function s3build(ty,col){
   // الرأس والوجه
   const headY=shY+.04+hr*.95;
   add(body,G.cyl,mat.skin,0,shY+.02,0,.04,.08,.04);
-  const head=add(body,G.sph,mat.skin,0,headY,0,hr,hr*1.06,hr);
+  const head=add(body,G.sph,mat.skin,0,headY,0,st==='woman'?hr*.92:hr,hr*1.08,hr);
   for(const s of[-1,1])add(body,G.sph,mat.dark,s*hr*.36,headY+hr*.02,hr*.9,.02,.024,.016);
   add(body,G.sph,mat.skin,0,headY-hr*.1,hr*.99,.022,.02,.02);
   if(st==='girl'){
@@ -1291,11 +1275,37 @@ function s3build(ty,col){
     }
     add(body,G.sph,mat.mouth,0,headY-hr*.44,hr*.9,.022,.009,.01);                            // ثغر صغير
   }
+  if(st==='woman'){
+    for(const sd of[-1,1]){
+      add(body,G.sph,mat.dark,sd*hr*.34,headY+hr*.0,hr*.905,.016,.022,.013);                   // عيون
+      add(body,G.sph,mat.white,sd*hr*.34+.008,headY+hr*.06,hr*.955,.009);
+      const lash=add(body,G.box,mat.dark,sd*hr*.46,headY+hr*.13,hr*.89,.018,.006,.008);lash.rotation.z=-sd*.5; // رمش خفيف بطرف العين
+      const brow=add(body,G.box,mat.hair,sd*hr*.36,headY+hr*.3,hr*.86,.036,.005,.007);brow.rotation.z=-sd*.12; // حواجب رفيعة
+      add(body,G.sph,mat.blush,sd*hr*.56,headY-hr*.25,hr*.78,.028,.016,.01);                    // خدود
+      add(body,G.sph,mat.gold,sd*hr*.93,headY-hr*.42,hr*.22,.017);                              // أقراط
+      add(body,G.sph,mat.gold,sd*hr*.93,headY-hr*.55,hr*.22,.011);
+    }
+    add(body,G.sph,mat.lip,0,headY-hr*.43,hr*.9,.03,.011,.012);                                 // شفايف حمرا
+    const nk=add(body,G.torus,mat.gold,0,shY-.002,.0,tr*.62);nk.rotation.x=Math.PI/2;nk.scale.z=.1; // عقد
+  }
+  if(st==='oldwoman'){
+    for(const sd of[-1,1]){
+      add(body,G.sph,mat.blush,sd*hr*.56,headY-hr*.28,hr*.78,.026,.015,.01);
+      add(body,G.sph,mat.pearl,sd*hr*.95,headY-hr*.4,hr*.2,.014);                              // أقراط لؤلؤ
+    }
+    add(body,G.sph,mat.lip,0,headY-hr*.45,hr*.9,.026,.01,.011);
+    const nk=add(body,G.torus,mat.pearl,0,shY-.002,.0,tr*.7);nk.rotation.x=Math.PI/2;nk.scale.z=.13; // عقد لؤلؤ
+  }
   // الشعر
   const cap=(hy,hz,sc)=>{const o=add(body,G.cap,mat.hair,0,hy,hz,hr*sc,hr*sc,hr*sc);o.rotation.x=-.6;return o};
   if(st==='man'){cap(headY+hr*.1,-hr*.06,1.08);add(body,G.box,mat.hair,0,headY-hr*.3,hr*.93,.1,.02,.03)}
   else if(st==='boy'){cap(headY+hr*.1,-hr*.05,1.08)}
-  else if(st==='woman'){cap(headY+hr*.1,-hr*.05,1.1);add(body,G.sph,mat.hair,0,headY-hr*.55,-hr*.62,hr*1.0,hr*1.5,hr*.5)}
+  else if(st==='woman'){
+    cap(headY+hr*.1,-hr*.05,1.14);
+    add(body,G.sph,mat.hair,-hr*.15,headY+hr*.6,hr*.5,hr*.85,hr*.22,hr*.4);                    // غرّة مائلة
+    add(body,G.sph,mat.hair,0,headY-hr*.4,-hr*.72,hr*.95,hr*1.1,hr*.38);                      // شعر من ورا (يخلص بمستوى الذقن)
+    for(const sd of[-1,1]){add(body,G.sph,mat.hair,sd*hr*1.0,headY-hr*.65,hr*.0,hr*.26,hr*1.0,hr*.32)} // خصل طويلة على الكتف
+  }
   else if(st==='girl'){
     cap(headY+hr*.1,-hr*.05,1.12);
     add(body,G.sph,mat.hair,0,headY+hr*.5,hr*.6,hr*.98,hr*.32,hr*.42);                       // غرّة
@@ -1458,7 +1468,6 @@ function updateSub(){
 setInterval(updateSub,500);
 function render(){
   if(!room)return;
-  syncEnv();
   if(room.state==='lobby'){
     show('lobby');
     $('lobTitle').textContent=(room.game==='mheibes'?'💍 محيبس':room.game==='mafia'?'🕵️ مافيا':room.game==='ludo'?(room.mode==='quick'?'🎲 لودو ⚡ سريع':room.mode==='battle'?'⚔️ لودو معركة':'🎲 لودو'):(room.mode==='battle'?'⚔️ حية ودرج معركة':'🐍 حية ودرج'))+' — '+(room.pub?'لعب عشوائي':'غرفتك');
@@ -1505,9 +1514,8 @@ function hitMsg(h){const n=room&&room.players[h.i]?room.players[h.i].name:'';
   if(h.kind==='shield')return '🛡️ درع '+n+' صدّ لدغة الحية!';
   if(h.dmg===0)return '🛡️ '+n+' صدّ الضربة';
   return (h.kind==='trap'?'🪤 فخ! ':h.kind==='snipe'?'🎯 قنص! ':'⚔️ ')+n+(h.killed?' ☠️ رجع لآخر ملجأ':' −'+h.dmg+'♥ (باقي '+h.hp+')')}
-var myCls=null,myEnv='mine',pickSent='';
+var myCls=null,pickSent='';
 const CLS_OPTS=[[null,'🎲','عشوائي','نوع مفاجئ'],[0,'🗡️','مندفع','ضربة ×2'],[1,'🛡️','مدرع','درع + 3♥'],[2,'🎯','قناص','يقنص بعيد'],[3,'🪤','مهندس','فخ مخفي']];
-const ENV_OPTS=[['mine','🎨','مظهري'],['classic','🎲','كلاسيك'],['desert','🏜️','صحراء'],['spring','🌸','ربيع'],['snow','❄️','ثلج'],['rain','🌧️','مطر'],['night','🌌','ليل']];
 function pickRow(box,title,opts,cur,fn){
   const h=document.createElement('div');h.className='pkt';h.textContent=title;box.appendChild(h);
   const r=document.createElement('div');r.className='pk';
@@ -1533,7 +1541,7 @@ function renderMenuPick(){
   const box=$('sbPick');if(!box)return;box.innerHTML='';
   if(curGame!=='snakes')return;
   if(curMode==='battle')pickDrop(box,'⚔️ اختر نوع جنديك',CLS_OPTS,myCls,v=>{myCls=v;renderMenuPick()});
-  pickDrop(box,'🌍 المظهر (جو اللعب)',ENV_OPTS,myEnv,v=>{myEnv=v;renderMenuPick()})}
+}
 function renderLobPick(){
   const box=$('lobPick');if(!box)return;box.innerHTML='';
   if(!room||(room.game||'snakes')!=='snakes'||room.state!=='lobby')return;
@@ -1541,14 +1549,7 @@ function renderLobPick(){
   if(room.mode==='battle'){
     if(me&&cur!==myCls&&pickSent!==room.code+':'+myCls){pickSent=room.code+':'+myCls;tx({t:'pick',cls:myCls})}
     pickDrop(box,'⚔️ اختر نوع جنديك',CLS_OPTS,myCls,v=>{myCls=v;pickSent=room.code+':'+v;tx({t:'pick',cls:v});renderLobPick()})}
-  if(room.host===room.you&&!room.pub)pickDrop(box,'🌍 المظهر (جو اللعب)',ENV_OPTS,room.env||'mine',v=>{myEnv=v;tx({t:'env',env:v})});
-  else if(room.env&&room.env!=='mine'){const e=ENV_OPTS.find(o=>o[0]===room.env);if(e){const d=document.createElement('div');d.className='pkt';d.textContent='🌍 جو اللعب: '+e[1]+' '+e[2];box.appendChild(d)}}}
-function syncEnv(){
-  const want=room&&room.game!=='ludo'&&room.game!=='mafia'&&room.game!=='mheibes'&&room.env&&room.env!=='mine'&&THEMES[room.env]?room.env:null;
-  const tag=want?room.code+':'+want:'';
-  if(tag===envApplied)return;
-  envApplied=tag;
-  if(want)applyTheme(want,true);else if(effKey)applyTheme(themeKey)}
+}
 // ---------- تأثيرات المعركة بحية ودرج ----------
 const isWar=()=>!!room&&room.game!=='ludo'&&room.mode==='battle';
 const sPct=n=>{const p=xy(Math.max(1,n||1));return [p.x,p.y]};
@@ -2433,7 +2434,7 @@ function inviteFriend(f){
   sentAt[f.id]=Date.now();
   setTimeout(()=>{if($('pick').classList.contains('on'))renderPick()},15100);
   if(room&&room.state==='lobby'){tx({t:'invite',id:f.id});renderPick()}
-  else{inviteQueue=[f.id];$('pick').classList.remove('on');tx({t:'create',game:curGame,mode:curMode,cls:myCls,env:myEnv,max:curGame==='ludo'?4:6,name:myName()})}
+  else{inviteQueue=[f.id];$('pick').classList.remove('on');tx({t:'create',game:curGame,mode:curMode,cls:myCls,max:curGame==='ludo'?4:6,name:myName()})}
 }
 function setMode(m){curMode=m;document.querySelectorAll('.mbtn').forEach(b=>b.classList.toggle('on',b.dataset.mode===m));renderMenuPick()}
 document.querySelectorAll('.mbtn').forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
@@ -2442,7 +2443,7 @@ function openBots(){
   const box=$('botBtns');box.innerHTML='';
   (curGame==='ludo'?[1,2,3]:curGame==='mafia'?[3,5,7,9]:curGame==='mheibes'?[1,2,3]:[1,3,5]).forEach(n=>{
     const b=document.createElement('button');b.className='btn';b.textContent=curGame==='mheibes'?(n===1?'ضد جهاز واحد (1 ضد 1)':n===2?'مع جهازين (2 ضد 1)':'مع 3 أجهزة (2 ضد 2)'):curGame==='mafia'?'مع '+n+' أجهزة ('+(n+1)+' لاعبين)':(n===1?'ضد جهاز واحد':'ضد '+n+' أجهزة');
-    b.onclick=()=>{$('botp').classList.remove('on');tx({t:'create',game:curGame,mode:curMode,cls:myCls,env:myEnv,max:curGame==='ludo'?4:6,bots:n,name:myName()})};
+    b.onclick=()=>{$('botp').classList.remove('on');tx({t:'create',game:curGame,mode:curMode,cls:myCls,max:curGame==='ludo'?4:6,bots:n,name:myName()})};
     box.appendChild(b);
   });
   $('botp').classList.add('on');
@@ -2456,7 +2457,7 @@ if(window.ResizeObserver){const ro=new ResizeObserver(()=>fitBoard());[$('top'),
 // ---------- الأزرار ----------
 $('tInvite').onclick=openPick;
 $('tAdd').onclick=openAdd;
-$('tRandom').onclick=()=>tx({t:'random',game:curGame,mode:curMode,cls:myCls,env:myEnv,name:myName()});
+$('tRandom').onclick=()=>tx({t:'random',game:curGame,mode:curMode,cls:myCls,name:myName()});
 $('tBot').onclick=openBots;
 $('inviteBtn').onclick=openPick;
 document.querySelectorAll('[data-game]').forEach(b=>b.onclick=()=>openMenu(b.dataset.game));
@@ -2514,81 +2515,24 @@ function sendChat(){const v=$('chatIn').value.trim();if(!v)return;if(chatBlocked
 $('chatSend').onclick=sendChat;
 $('chatIn').addEventListener('keydown',e=>{if(e.key==='Enter')sendChat()});
 
-// ---------- المظاهر ----------
+// ---------- الألوان (مظهر واحد ثابت) ----------
 const THEMES={
   classic:{name:'الكلاسيكي',ic:'🎲',ink:'#141838',panel:'#222858',panel2:'#2d3470',muted:'#9aa3d6',
     a:'#cdeee0',b:'#bfe0f3',end:'#ffcf4a',frame:'#ffcf4a',num:'#1b2a3acc',grid:'rgba(30,60,90,.5)',
     bg:'radial-gradient(900px 520px at 50% -5%,#323b9a 0%,transparent 70%),#141838',
     snakes:[['#3fae4f','#1c6b2e','#c3f5a8'],['#e8892b','#8a3d0b','#ffd9a0'],['#9a62e0','#4a2a8c','#e3ccff'],['#e0525e','#7d1b27','#ffc9ce'],['#27b3ad','#0d5f5b','#b4f3ef']],
-    lad:{rail:'#8a5526',hi:'#d9ad78',rung:'#7a4a1f',rungHi:'#c98f52'},fx:null},
-  desert:{name:'الصحراء',ic:'🏜️',ink:'#8a3f12',panel:'#6b3a14',panel2:'#85501f',muted:'#f0cf9e',
-    a:'#f6dfae',b:'#e9c47f',end:'#ffcf4a',frame:'#b0652a',num:'#5b3410',grid:'rgba(110,60,20,.45)',
-    bg:'radial-gradient(circle at 82% 6%,#ffe9a8 0,#ffc65a 7%,transparent 30%),linear-gradient(180deg,#5a2d0c 0%,#9c4a16 55%,#c9772a 100%)',
-    snakes:[['#c99a4a','#7a5420','#f3dba0'],['#b8512a','#6d2a12','#f0b08a'],['#8c9a3a','#4a5416','#dfe8a0'],['#d9822b','#7d4210','#ffd7a0'],['#a3472f','#5e2314','#f0b9a8']],
-    lad:{rail:'#6e4318',hi:'#c99a5a',rung:'#5b3410',rungHi:'#b8884a'},fx:null},
-  snow:{name:'الثلج',ic:'❄️',ink:'#12335c',panel:'#1e3a5f',panel2:'#2a4f7d',muted:'#b9d6f2',
-    a:'#f7fcff',b:'#cfe6f6',end:'#ffe08a',frame:'#8cc0e6',num:'#29506f',grid:'rgba(40,90,130,.4)',
-    bg:'radial-gradient(800px 420px at 50% -5%,#5aa0d8 0%,transparent 70%),linear-gradient(180deg,#0f2a4d,#1d4e80)',
-    snakes:[['#9bd1f5','#3a7fb0','#ffffff'],['#6fb7e8','#2d6a9c','#e4f3ff'],['#b7a6f2','#5846a8','#efeaff'],['#7fe0d4','#2a8a80','#e0fffb'],['#e8f2fb','#7a98b5','#ffffff']],
-    lad:{rail:'#7c8fa3',hi:'#e8f2fb',rung:'#5f7388',rungHi:'#dbe9f5'},fx:{type:'fall',chars:['❄️','❅','❆']}},
-  spring:{name:'الربيع',ic:'🌸',ink:'#1f5a34',panel:'#2e6b3a',panel2:'#3d8a4a',muted:'#cfeccd',
-    a:'#e6f7c9',b:'#ffd9e8',end:'#ffe27a',frame:'#6cc36a',num:'#3d5a2c',grid:'rgba(60,110,50,.4)',
-    bg:'radial-gradient(800px 420px at 50% -5%,#8be08a 0%,transparent 70%),linear-gradient(180deg,#1f5a34,#2f7d46)',
-    snakes:[['#ff8fb8','#b8325f','#ffe1ee'],['#7ed957','#3b8a22','#e3ffc8'],['#ffd24d','#a87a00','#fff3c2'],['#ff7a6b','#a8362a','#ffd5cf'],['#5fc7a8','#1f7a62','#d4fff2']],
-    lad:{rail:'#5b8a3a',hi:'#a8d97a',rung:'#4a7430',rungHi:'#94c968'},fx:{type:'fall',chars:['🌸','🌼','🍃']}},
-  night:{name:'الليل',ic:'🌌',ink:'#1a0f4a',panel:'#1a1040',panel2:'#2a1a66',muted:'#a99cf5',
-    a:'#2e2a78',b:'#3b3590',end:'#ffcf4a',frame:'#7c5cff',num:'#d9d4ff',grid:'rgba(160,150,255,.35)',
-    bg:'radial-gradient(800px 420px at 50% -5%,#5b2fd0 0%,transparent 70%),linear-gradient(180deg,#0b0624,#1a0f4a)',
-    snakes:[['#ff4fd8','#8a1a78','#ffc3f4'],['#2ee6d6','#0a7f76','#c4fffa'],['#8c6bff','#3a22a8','#d8ccff'],['#ffb02e','#a35f00','#ffe2a8'],['#4fa3ff','#1a4f9e','#c8e4ff']],
-    lad:{rail:'#b28bff',hi:'#f0e2ff',rung:'#8d63e6',rungHi:'#e0cfff'},fx:{type:'twinkle',chars:['✦','✧','⋆']}}
+    lad:{rail:'#8a5526',hi:'#d9ad78',rung:'#7a4a1f',rungHi:'#c98f52'},fx:null}
 };
-THEMES.rain={name:'المطر',ic:'🌧️',ink:'#1c2b3a',panel:'#273c52',panel2:'#355070',muted:'#a9c1d9',
-  a:'#dfe9f2',b:'#c3d3e3',end:'#ffe08a',frame:'#5b7f9e',num:'#28425a',grid:'rgba(40,70,100,.4)',
-  bg:'radial-gradient(800px 420px at 50% -5%,#4a6d8c 0%,transparent 70%),linear-gradient(180deg,#141f2b,#2b4258)',
-  snakes:[['#5fa8d3','#1f5a80','#d6ecf8'],['#6dbf9c','#256a50','#d4f3e6'],['#9b8fd1','#463c82','#e6e1fa'],['#d98f7a','#7a3a2a','#f6d9cf'],['#7ec1c9','#2a6870','#d6f2f5']],
-  lad:{rail:'#5a6f84',hi:'#b9cde0',rung:'#475a6d',rungHi:'#9fb6cb'},fx:{type:'fall',chars:['💧','💧','|'],n:34,d:[1.1,2.4]}};
-var effKey=null,envApplied='';
-let themeKey=localStorage.getItem('sl_theme');
-if(!THEMES[themeKey])themeKey='classic';
-function buildFx(T){
-  const fx=$('fx');fx.innerHTML='';fx.className=T.fx?T.fx.type:'';
-  if(!T.fx)return;
-  for(let i=0;i<(T.fx.n||16);i++){
-    const sp=document.createElement('span');
-    sp.textContent=T.fx.chars[Math.floor(Math.random()*T.fx.chars.length)];
-    sp.style.left=(Math.random()*100)+'%';
-    sp.style.fontSize=(10+Math.random()*14)+'px';
-    if(T.fx.type==='twinkle'){sp.style.top=(Math.random()*100)+'%';sp.style.animationDuration=(2+Math.random()*3)+'s';sp.style.color='#fff'}
-    else sp.style.animationDuration=(T.fx.d?T.fx.d[0]+Math.random()*(T.fx.d[1]-T.fx.d[0]):9+Math.random()*9)+'s';
-    sp.style.animationDelay=(-Math.random()*12)+'s';
-    fx.appendChild(sp);
-  }
-}
-function applyTheme(key,temp){
-  if(!THEMES[key])key='classic';
-  if(temp)effKey=key;else{effKey=null;themeKey=key;localStorage.setItem('sl_theme',key)}
-  const T=THEMES[key],r=document.documentElement.style;
+const themeKey='classic',effKey=null;
+function applyTheme(){
+  const T=THEMES.classic,r=document.documentElement.style;
   r.setProperty('--ink',T.ink);r.setProperty('--panel',T.panel);r.setProperty('--panel2',T.panel2);r.setProperty('--muted',T.muted);
   r.setProperty('--ca',T.a);r.setProperty('--cb',T.b);r.setProperty('--cend',T.end);r.setProperty('--frame',T.frame);
   r.setProperty('--num',T.num);r.setProperty('--grid',T.grid);
   document.body.style.background=T.bg;
-  drawArt();buildFx(T);
+  drawArt();
 }
-function renderThemes(){
-  const box=$('themeList');box.innerHTML='';
-  Object.keys(THEMES).forEach(k=>{
-    const T=THEMES[k],b=document.createElement('button');b.className='tcard'+(k===themeKey?' on':'');
-    const ic=document.createElement('span');ic.className='ic';ic.textContent=T.ic;
-    const sw=document.createElement('div');sw.className='sw';sw.style.setProperty('--frm',T.frame);
-    [T.a,T.b,T.a,T.b].forEach(c=>{const d=document.createElement('div');d.style.background=c;sw.appendChild(d)});
-    const nm=document.createElement('span');nm.textContent=T.name;
-    b.append(ic,sw,nm);
-    b.onclick=()=>{applyTheme(k);$('themep').classList.remove('on')};
-    box.appendChild(b);
-  });
-}
-document.querySelectorAll('[data-themes]').forEach(b=>b.onclick=()=>{if(room&&effKey){toast('🔒 الجو مثبّت من صاحب الغرفة');return}renderThemes();$('themep').classList.add('on')});
-applyTheme(themeKey);
+applyTheme();
 </script>
 </body>
 </html>
