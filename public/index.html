@@ -362,6 +362,10 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 #lDice .f2{transform:rotateX(90deg) translateZ(28px)}
 #lDice .f5{transform:rotateX(-90deg) translateZ(28px)}
 @media (prefers-reduced-motion:reduce){#lDice .dscene.toss{animation:none}}
+#l3d{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;display:none;z-index:2}
+#lWrap.l3 #l3d{display:block}
+#lWrap.l3 .ltok:not(.bt) svg{display:none}
+#lWrap.l3 .ltok:not(.bt)::after{inset:-120% -25% -25% -25%;border-radius:40%}
 /* ===== لعبة المافيا ===== */
 .tile.g3{background:linear-gradient(145deg,#9a63e8,#3a1c6e)}
 #lobby{overflow-y:auto;justify-content:safe center}
@@ -533,6 +537,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
   #hAct{padding-top:8px}
 }
 </style>
+<script src="/three.min.js" async onload="try{l3ready()}catch(e){}"></script>
 </head>
 <body>
 <div id="fx" aria-hidden="true"></div>
@@ -592,6 +597,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
         <div id="lTraps"></div>
         <div id="lMarks"></div>
         <svg id="lDest" viewBox="0 0 15 15"></svg>
+        <canvas id="l3d" aria-hidden="true"></canvas>
         <div id="lToks"></div>
         <div id="lFx"></div>
       </div>
@@ -1893,6 +1899,87 @@ function pawnSVG(c){
    +'<circle cx="20" cy="14" r="10" fill="'+c+'"/><circle cx="20" cy="14" r="10" fill="url(#pwSh)"/><circle cx="20" cy="14" r="10" fill="url(#pwHi)"/>'
    +'<path d="'+body+'" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1"/><circle cx="20" cy="14" r="10" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1"/></svg>';
 }
+// ---------- بيادق 3D حقيقية (Three.js) — تتراجع تلقائياً للبيادق SVG إذا ما تحمّلت المكتبة ----------
+const L3={ok:false,fail:false,pawns:[],raf:0,last:0,D:22,S:10};
+function l3ready(){if(room&&room.game==='ludo')placeLudo()}
+function l3init(){
+  if(L3.ok)return true;
+  if(L3.fail||!window.THREE)return false;
+  try{
+    const T=THREE,cv=$('l3d');
+    const r=new T.WebGLRenderer({canvas:cv,alpha:true,antialias:true,powerPreference:'low-power'});
+    r.setClearColor(0x000000,0);
+    const sc=new T.Scene();
+    sc.add(new T.HemisphereLight(0xffffff,0x7a6a50,.9));
+    const dl=new T.DirectionalLight(0xffffff,.85);dl.position.set(-5,16,5);sc.add(dl);
+    const cam=new T.PerspectiveCamera();
+    const pts=[[0,0],[.34,0],[.37,.05],[.33,.12],[.22,.24],[.15,.42],[.14,.58],[.25,.64],[.27,.7],[.18,.75],[0,.76]].map(p=>new T.Vector2(p[0],p[1]));
+    L3.geo=new T.LatheGeometry(pts,28);L3.head=new T.SphereGeometry(.21,24,16);
+    const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,2,32,32,32);
+    g.addColorStop(0,'rgba(0,0,0,.6)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,64,64);
+    L3.shTex=new T.CanvasTexture(c);L3.shGeo=new T.PlaneGeometry(1.05,1.05);L3.shGeo.rotateX(-Math.PI/2);
+    Object.assign(L3,{r,sc,cam,cv});
+    cv.addEventListener('webglcontextlost',e=>{e.preventDefault();L3.ok=false;L3.fail=true;$('lWrap').classList.remove('l3')});
+    L3.ok=true;l3resize();
+    if(window.ResizeObserver)new ResizeObserver(l3resize).observe($('lWrap'));
+    window.addEventListener('resize',l3resize);
+    return true;
+  }catch(e){L3.fail=true;L3.ok=false;return false}
+}
+function l3resize(){
+  if(!L3.ok)return;
+  const w=Math.max(2,$('lWrap').clientWidth);
+  L3.r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));L3.r.setSize(w,w,false);
+  const D=L3.D,S=L3.S,n=1,k=n/D,cam=L3.cam;
+  cam.position.set(7.5,D,7.5+S);cam.up.set(0,0,-1);cam.lookAt(7.5,0,7.5+S);cam.updateMatrixWorld(true);
+  cam.projectionMatrix.makePerspective(-7.5*k,7.5*k,(S+7.5)*k,(S-7.5)*k,n,80);
+  cam.projectionMatrixInverse.copy(cam.projectionMatrix);
+  if(cam.projectionMatrixInverse.invert)cam.projectionMatrixInverse.invert();else cam.projectionMatrixInverse.getInverse(cam.projectionMatrix);
+  l3kick();
+}
+function l3make(){
+  const T=THREE,m=new T.MeshPhongMaterial({color:0xffffff,shininess:90,specular:0x777777});
+  const g=new T.Group(),body=new T.Mesh(L3.geo,m),head=new T.Mesh(L3.head,m);head.position.y=.93;
+  const sh=new T.Mesh(L3.shGeo,new T.MeshBasicMaterial({map:L3.shTex,transparent:true,depthWrite:false}));sh.position.y=.004;
+  g.add(sh,body,head);g.scale.setScalar(1.22);L3.sc.add(g);
+  return {g,m,sh,cx:null,cz:0,tx:0,tz:0,hop:-1,legal:false,target:false,dim:false,col:''};
+}
+function l3sync(items,box){
+  const wrap=$('lWrap');
+  if(!room||room.mode==='battle'||!l3init()){wrap.classList.remove('l3');return}
+  wrap.classList.add('l3');
+  while(L3.pawns.length>items.length){const p=L3.pawns.pop();L3.sc.remove(p.g);p.m.dispose();p.sh.material.dispose()}
+  while(L3.pawns.length<items.length)L3.pawns.push(l3make());
+  items.forEach((it,i)=>{
+    const p=L3.pawns[i],el=box.children[i];
+    p.tx=it.xy[0];p.tz=it.xy[1];
+    if(p.cx==null){p.cx=p.tx;p.cz=p.tz}
+    if(p.col!==it.color){p.col=it.color;p.m.color.set(it.color)}
+    p.legal=!!el&&el.classList.contains('legal');p.target=!!el&&el.classList.contains('target');
+    const dim=!!el&&el.classList.contains('dim');
+    if(dim!==p.dim){p.dim=dim;p.m.transparent=dim;p.m.opacity=dim?.55:1;p.m.needsUpdate=true}
+  });
+  l3kick();
+}
+function l3hop(i){const p=L3.pawns[i];if(p){p.hop=performance.now();l3kick()}}
+function l3kick(){if(L3.ok&&!L3.raf){L3.last=performance.now();L3.raf=requestAnimationFrame(l3tick)}}
+function l3tick(now){
+  L3.raf=0;if(!L3.ok||!$('lWrap').classList.contains('l3')||document.hidden)return;
+  const dt=Math.min(.05,(now-L3.last)/1000);L3.last=now;
+  const f=1-Math.exp(-dt/.045);let busy=false;
+  L3.pawns.forEach(p=>{
+    const dx=p.tx-p.cx,dz=p.tz-p.cz;
+    if(Math.abs(dx)+Math.abs(dz)>.002){p.cx+=dx*f;p.cz+=dz*f;busy=true}else{p.cx=p.tx;p.cz=p.tz}
+    let y=0;
+    if(p.hop>=0){const t=(now-p.hop)/190;if(t>=1)p.hop=-1;else{y=Math.sin(t*Math.PI)*.45;busy=true}}
+    p.g.position.set(p.cx,y,p.cz);
+    p.sh.position.y=.004-y;p.sh.scale.setScalar(1-y*.5);
+    if(p.legal||p.target){busy=true;const k=.1+.09*Math.sin(now/170);p.m.emissive.setHex(p.target?0xff3b3b:0xffb703).multiplyScalar(k)}
+    else if(p.m.emissive.r||p.m.emissive.g||p.m.emissive.b)p.m.emissive.setHex(0);
+  });
+  L3.r.render(L3.sc,L3.cam);
+  if(busy)L3.raf=requestAnimationFrame(l3tick);
+}
 drawLudo(false);
 function placeLudo(){
   if(!room||!room.players.some(p=>p.tokens))return;
@@ -1967,8 +2054,9 @@ function placeLudo(){
       selVal=null;tx({t:'lmove',tok:t,val})
     }:null;
   });
+  l3sync(items,box);
 }
-function hopL(i,t){const e=$('lToks').children[i*4+t];if(!e)return;e.classList.remove('hop');void e.offsetWidth;e.classList.add('hop');e.addEventListener('animationend',()=>e.classList.remove('hop'),{once:true})}
+function hopL(i,t){l3hop(i*4+t);const e=$('lToks').children[i*4+t];if(!e)return;e.classList.remove('hop');void e.offsetWidth;e.classList.add('hop');e.addEventListener('animationend',()=>e.classList.remove('hop'),{once:true})}
 function renderLudo(){
   if(!room)return;
   show('ludo');$('lcode').textContent='الغرفة '+room.code;
