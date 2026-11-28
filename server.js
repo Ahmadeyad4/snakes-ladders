@@ -273,6 +273,12 @@ const server = http.createServer((req, res) => {
       res.writeHead(200, { 'Content-Type': 'audio/mpeg', 'Cache-Control': 'public, max-age=604800' });
       res.end(data);
     });
+  } else if (req.url === '/three.min.js') {
+    fs.readFile(path.join(__dirname, 'public', 'three.min.js'), (err, data) => {
+      if (err) { res.writeHead(404); return res.end('not found'); }
+      res.writeHead(200, { 'Content-Type': 'application/javascript; charset=utf-8', 'Cache-Control': 'public, max-age=604800' });
+      res.end(data);
+    });
   } else if (req.url === '/health') {
     res.writeHead(200); res.end('ok');
   } else {
