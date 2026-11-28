@@ -1,5 +1,6 @@
 // وضع المعركة لحية ودرج (السيرفر هو الحَكَم). كل لاعب جندي واحد بنوع عشوائي:
 // 0 مندفع (2♥) | 1 مدرع (3♥) | 2 قناص (2♥) | 3 مهندس (2♥)
+// توازن: المدرع بدون تخفيف التحام (بس درع أول لدغة)، القناص مداه 2..5، المهندس يكدر ينصب 3 فخاخ.
 const HP = [2, 3, 2, 2];
 // الملاجئ: خانة 0 وكل مضاعف 10. ما ينضرب أحد عليها.
 const isSafe = n => n === 0 || n % 10 === 0;
@@ -17,10 +18,9 @@ function init(room) {
 }
 function resetTurn(room) { room.ts = { shot: false, trapped: false }; }
 
-// ضربة: المدرع يمتص 1 من الالتحام. إذا مات يرجع لآخر ملجأ تحته بكامل طاقته.
+// ضربة. إذا مات يرجع لآخر ملجأ تحته بكامل طاقته.
 function hit(room, qi, dmg, kind) {
   const q = room.players[qi];
-  if (q.cls === 1 && kind === 'melee') dmg = Math.max(0, dmg - 1);
   let killed = false;
   if (dmg > 0) {
     q.hp -= dmg;
@@ -59,13 +59,13 @@ function move(room, pi, dice, SNAKES, LADDERS) {
   return { from, land, to: p.pos, hits, trap, rush };
 }
 
-// القناص: بعد حركته يضرب عدو يبعد 2..4 خانات قدامه (مرة بالدور، مو على الملاجئ)
+// القناص: بعد حركته يضرب عدو يبعد 2..5 خانات قدامه (مرة بالدور، مو على الملاجئ)
 function snipeTargets(room, pi) {
   const p = room.players[pi], out = [];
   if (!p || p.cls !== 2 || !room.ts || room.ts.shot) return out;
   room.players.forEach((q, qi) => {
     const d = q.pos - p.pos;
-    if (qi !== pi && d >= 2 && d <= 4 && !isSafe(q.pos)) out.push({ i: qi, d });
+    if (qi !== pi && d >= 2 && d <= 5 && !isSafe(q.pos)) out.push({ i: qi, d });
   });
   return out;
 }
@@ -78,7 +78,7 @@ function snipe(room, pi, qi) {
   return h;
 }
 
-// المهندس: ينصب فخ مخفي بخانته (مو ملجأ). أقصى فخين، والأقدم يختفي.
+// المهندس: ينصب فخ مخفي بخانته (مو ملجأ). أقصى 3 فخاخ، والأقدم يختفي.
 function canTrap(room, pi) {
   const p = room.players[pi];
   if (!p || p.cls !== 3 || !room.ts || room.ts.trapped) return false;
@@ -89,7 +89,7 @@ function placeTrap(room, pi) {
   if (!canTrap(room, pi)) return false;
   const p = room.players[pi];
   p.traps.push(p.pos);
-  if (p.traps.length > 2) p.traps.shift();
+  if (p.traps.length > 3) p.traps.shift();
   room.ts.trapped = true;
   return true;
 }

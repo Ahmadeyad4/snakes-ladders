@@ -139,11 +139,10 @@ function tokensAtRing(room, ri) {
 }
 
 // ضربة على جندي. kind: melee (التحام) | snipe | trap
-// الدرع: يمتص 1 من الالتحام فقط (عادي 1 ← 0، انقضاض 2 ← 1). القنص والفخ يتجاوزان الدرع.
+// توازن: المدرع ما عنده تخفيف التحام بعد (قوته بالامتصاص عن الحلفاء).
 // المدرع يمتص 1 ضرر عن حليف بنفس الخانة أو المجاورة (مرة بالدور) ويخسر هو 1 HP.
 function hurt(room, qi, qt, dmg, kind) {
   const q = room.players[qi];
-  if (qt === 1 && kind === 'melee') dmg = Math.max(0, dmg - 1);
   let abs = null;
   if (dmg > 0 && qt !== 1 && !q.absorbed && q.hp[1] > 0) {
     const tr = q.tokens[1], vr = q.tokens[qt];
@@ -198,14 +197,14 @@ function applyMoveBattle(room, pi, ti, dice) {
   return { from, to, captured, hits, trap, rushKill: ti === 0 && captured.some(c => c.i !== pi) };
 }
 
-// القناص: بعد ما يتحرك بنفس الدور، مرة وحدة، يضرب عدو يبعد 2 أو 3 خانات أمامه بدون أي جندي بالخانات الفاصلة
+// القناص: بعد ما يتحرك بنفس الدور، مرة وحدة، يضرب عدو يبعد 2 إلى 4 خانات أمامه بدون أي جندي بالخانات الفاصلة
 function snipeTargets(room, pi) {
   const out = [];
   const p = room.players[pi];
   if (!p || room.mode !== 'battle' || !room.ts || room.ts.shot || !room.ts.moved.includes(2)) return out;
   const r = p.tokens[2];
   if (r < 0 || r > 50) return out;
-  for (let d = 2; d <= 3; d++) {
+  for (let d = 2; d <= 4; d++) {
     if (r + d > 50) break;
     if (tokensAtRing(room, ringIndex(p.seat, r + d - 1)).length) break;   // خط الرؤية مسدود
     const ri = ringIndex(p.seat, r + d);
@@ -223,7 +222,7 @@ function doSnipe(room, pi, qi, qt) {
   return { hit: h, captured };
 }
 
-// المهندس: بعد حركته ينصب فخ بالخانة اللي يقف عليها (غير آمنة). أقصى فخين، والأقدم يختفي.
+// المهندس: بعد حركته ينصب فخ بالخانة اللي يقف عليها (غير آمنة). أقصى 3 فخاخ، والأقدم يختفي.
 function canTrap(room, pi) {
   const p = room.players[pi];
   if (!p || room.mode !== 'battle' || !room.ts || room.ts.trapped || !room.ts.moved.includes(3)) return false;
@@ -237,7 +236,7 @@ function placeTrap(room, pi) {
   if (!canTrap(room, pi)) return false;
   const p = room.players[pi];
   p.traps.push(ringIndex(p.seat, p.tokens[3]));
-  if (p.traps.length > 2) p.traps.shift();
+  if (p.traps.length > 3) p.traps.shift();
   room.ts.trapped = true;
   return true;
 }
