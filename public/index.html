@@ -373,6 +373,9 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
 #lWrap.l3 #l3d{display:block}
 #lWrap.l3 .ltok:not(.bt) svg{display:none}
 #lWrap.l3 .ltok:not(.bt)::after{inset:-120% -25% -25% -25%;border-radius:40%}
+#s3d{position:absolute;pointer-events:none;display:none;z-index:6}
+#boardWrap.s3 #s3d{display:block}
+#boardWrap.s3 .tok:not(.bt){visibility:hidden}
 /* ===== لعبة المافيا ===== */
 .tile.g3{background:linear-gradient(145deg,#9a63e8,#3a1c6e)}
 #lobby{overflow-y:auto;justify-content:safe center}
@@ -544,7 +547,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
   #hAct{padding-top:8px}
 }
 </style>
-<script src="/three.min.js" async onload="try{l3ready()}catch(e){}"></script>
+<script src="/three.min.js" async onload="try{l3ready()}catch(e){}try{s3ready()}catch(e){}"></script>
 </head>
 <body>
 <div id="fx" aria-hidden="true"></div>
@@ -654,7 +657,7 @@ html.lock body{position:fixed;top:0;left:0;right:0;width:100%}
       <div id="toks"></div>
       <div id="sTraps"></div>
       <div id="sFx"></div>
-    </div></div>
+    </div><canvas id="s3d" aria-hidden="true"></canvas></div>
     <div id="ctrl">
       <button id="dice" type="button" aria-label="ارمِ النرد">⚀</button>
       <div id="sSide"><div id="sStat"></div><div id="sbAct"></div></div>
@@ -1168,12 +1171,221 @@ async function handle(m){
 }
 
 // ---------- الرسم ----------
-function hop(i){const t=$('toks').children[i];if(!t)return;t.classList.remove('hop');void t.offsetWidth;t.classList.add('hop')}
+function hop(i){try{s3hop(i)}catch(e){}const t=$('toks').children[i];if(!t)return;t.classList.remove('hop');void t.offsetWidth;t.classList.add('hop')}
 async function slide(i,pos){
+  if(S3.ok&&$('boardWrap').classList.contains('s3')&&S3.pawns[i]){
+    const from=disp[i],d=s3slide(i,from,pos);
+    disp[i]=pos;placeToks();await sleep(d+150);return;
+  }
   const t=$('toks').children[i];if(t)t.style.transitionDuration='.7s';
   disp[i]=pos;placeToks();await sleep(800);
   if(t)t.style.transitionDuration='';
 }
+// ---------- بيادق بشرية 3D لحية ودرج (Three.js) — تتراجع تلقائياً لبيادق الدوائر إذا ما تحمّلت المكتبة ----------
+// كل لاعب ياخذ شخصية حسب ترتيبه بالغرفة (نفس الترتيب عند كل اللاعبين): رجل، امرأة، ولد، بنت، رجل عجوز، عجوز (حتى 6 لاعبين)
+const S3_EMOJI=['👨','👩','👦','👧','👴','👵'];
+const S3_NAME=['رجل','امرأة','ولد','بنت','رجل عجوز','عجوز'];
+const S3_T=[
+  {style:'man',     leg:.36,tor:.40,tr:.150,hr:.125,skin:0xd9a577,hair:0x2a1b12,pants:0x2d3a55,c2:0xffffff,amp:.75},
+  {style:'woman',   leg:.31,tor:.36,tr:.128,hr:.118,skin:0xe6b894,hair:0x2b1810,pants:0,c2:0x2b2b2b,amp:.55},
+  {style:'boy',     leg:.25,tor:.28,tr:.118,hr:.132,skin:0xe9b98f,hair:0x5a3418,pants:0x3b5b8c,c2:0xffffff,amp:.95},
+  {style:'girl',    leg:.23,tor:.26,tr:.108,hr:.130,skin:0xf0c4a0,hair:0x3a2012,pants:0,c2:0xffffff,amp:.85},
+  {style:'oldman',  leg:.30,tor:.34,tr:.140,hr:.120,skin:0xcf9f7a,hair:0xf1f1f1,pants:0x5a4a3a,c2:0xffffff,amp:.42,stoop:.15,cane:1},
+  {style:'oldwoman',leg:.27,tor:.31,tr:.125,hr:.115,skin:0xdcb08c,hair:0xcfcfd6,pants:0,c2:0x6d5c4b,amp:.36,stoop:.15,cane:1}
+];
+const S3={ok:false,fail:false,pawns:[],raf:0,last:0,N:10,Hc:6,K:1.05,M:{l:1,r:1,t:1.3,b:.85}};
+function s3init(){
+  if(S3.ok)return true;
+  if(S3.fail||!window.THREE)return false;
+  try{
+    const T=THREE,cv=$('s3d');
+    const r=new T.WebGLRenderer({canvas:cv,alpha:true,antialias:true,powerPreference:'low-power'});
+    r.setClearColor(0x000000,0);
+    const sc=new T.Scene();
+    sc.add(new T.HemisphereLight(0xffffff,0x8a7a60,.95));
+    const dl=new T.DirectionalLight(0xffffff,.8);dl.position.set(-4,12,6);sc.add(dl);
+    const cam=new T.OrthographicCamera(-1,1,1,-1,.1,20);
+    S3.G={cyl:new T.CylinderGeometry(1,1,1,12),tor:new T.CylinderGeometry(1,.82,1,14),cone:new T.CylinderGeometry(.5,1,1,18),
+      sph:new T.SphereGeometry(1,16,12),cap:new T.SphereGeometry(1,16,10,0,Math.PI*2,0,Math.PI*.47),
+      box:new T.BoxGeometry(1,1,1),torus:new T.TorusGeometry(1,.14,8,20),ring2:new T.TorusGeometry(1,.07,6,16)};
+    const c=document.createElement('canvas');c.width=c.height=64;const x=c.getContext('2d'),g=x.createRadialGradient(32,32,2,32,32,32);
+    g.addColorStop(0,'rgba(0,0,0,.55)');g.addColorStop(1,'rgba(0,0,0,0)');x.fillStyle=g;x.fillRect(0,0,64,64);
+    S3.shTex=new T.CanvasTexture(c);S3.shGeo=new T.PlaneGeometry(.95,.95);S3.shGeo.rotateX(-Math.PI/2);
+    S3.ringGeo=new T.RingGeometry(.27,.35,32);S3.ringGeo.rotateX(-Math.PI/2);
+    Object.assign(S3,{r,sc,cam,cv});
+    cv.addEventListener('webglcontextlost',e=>{e.preventDefault();S3.ok=false;S3.fail=true;$('boardWrap').classList.remove('s3')});
+    S3.ok=true;s3resize();
+    if(window.ResizeObserver)new ResizeObserver(s3resize).observe($('boardWrap'));
+    window.addEventListener('resize',s3resize);
+    return true;
+  }catch(e){S3.fail=true;S3.ok=false;return false}
+}
+// إسقاط مائل: مستوى اللوحة يطابق المربع تماماً، والشخصيات واقفة عمودياً وتتغطّى بعضها صح
+function s3resize(){
+  if(!S3.ok)return;
+  const wrap=$('boardWrap'),w=Math.max(2,wrap.clientWidth),M=S3.M,N=S3.N,W=N+M.l+M.r,H=N+M.t+M.b,cs=S3.cv.style;
+  cs.left=(-M.l/N*100)+'%';cs.top=(-M.t/N*100)+'%';cs.width=(W/N*100)+'%';cs.height=(H/N*100)+'%';
+  S3.r.setPixelRatio(Math.min(window.devicePixelRatio||1,2));S3.r.setSize(w*W/N,w*H/N,false);
+  const c=N/2,cam=S3.cam;
+  cam.left=-(c+M.l);cam.right=c+M.r;cam.top=c+M.t;cam.bottom=-(c+M.b);cam.near=.1;cam.far=S3.Hc+6;
+  cam.position.set(c,S3.Hc,c);cam.up.set(0,0,-1);cam.lookAt(c,0,c);cam.updateMatrixWorld(true);
+  cam.updateProjectionMatrix();
+  const e=cam.projectionMatrix.elements,k=e[5]*S3.K;e[9]+=k;e[13]+=k*S3.Hc;
+  cam.projectionMatrixInverse.copy(cam.projectionMatrix);
+  if(cam.projectionMatrixInverse.invert)cam.projectionMatrixInverse.invert();else cam.projectionMatrixInverse.getInverse(cam.projectionMatrix);
+  s3kick();
+}
+function s3build(ty,col){
+  const T=THREE,P=S3_T[ty],G=S3.G,st=P.style,leg=P.leg,tor=P.tor,tr=P.tr,hr=P.hr;
+  const M=(c,sh)=>new T.MeshPhongMaterial({color:c,shininess:sh||18,specular:0x2a2a2a});
+  const mat={skin:M(P.skin),hair:M(P.hair,40),cloth:M(col,30),pants:M(P.pants||0x333333),c2:M(P.c2),shoe:M(0x2a1c14,10),dark:M(0x151515,60),wood:M(0x6b4a2b,10)};
+  const g=new T.Group(),body=new T.Group();g.add(body);
+  const add=(par,geo,m,px,py,pz,sx,sy,sz)=>{const o=new T.Mesh(geo,m);o.position.set(px,py,pz);o.scale.set(sx,sy==null?sx:sy,sz==null?sx:sz);o.frustumCulled=false;par.add(o);return o};
+  const limb=(par,px,py,len,r,m,endM,endR)=>{const j=new T.Group();j.position.set(px,py,0);par.add(j);add(j,G.cyl,m,0,-len/2,0,r,len,r);if(endM)add(j,G.sph,endM,0,-len,0,endR||r*1.15);return j};
+  const dressy=st==='woman'||st==='girl'||st==='oldwoman',old=!!P.cane;
+  // الأرجل
+  const lr=dressy?.042:st==='boy'?.055:.062,lx=dressy?.055:st==='boy'?.065:.08;
+  const legMat=(dressy||st==='boy')?mat.skin:mat.pants;
+  const legL=limb(body,-lx,leg,leg,lr,legMat),legR=limb(body,lx,leg,leg,lr,legMat);
+  [legL,legR].forEach(l=>{
+    add(l,G.sph,mat.shoe,0,-leg+.012,.03,lr*1.25,lr*.75,lr*1.8);
+    if(st==='boy')add(l,G.cyl,mat.pants,0,-leg*.2,0,lr*1.2,leg*.42,lr*1.2);
+  });
+  // الجذع واللباس
+  if(!dressy)add(body,G.tor,mat.cloth,0,leg+tor/2,0,tr,tor,tr*.8);
+  else{
+    const wy=leg+tor*.42,hem=leg*(st==='girl'?.55:.36),rb=tr*(st==='girl'?2.15:2.0),dm=st==='oldwoman'?mat.c2:mat.cloth;
+    add(body,G.tor,dm,0,(wy+leg+tor)/2,0,tr,leg+tor-wy,tr*.8);
+    add(body,G.cone,dm,0,(wy+hem)/2,0,rb,wy-hem,rb*.9);
+    if(st!=='oldwoman')add(body,G.cyl,mat.c2,0,wy,0,tr*.97,.03,tr*.8*.97);
+  }
+  const shY=leg+tor;
+  if(st==='oldwoman')add(body,G.cap,mat.cloth,0,shY-.045,0,tr*1.5,.15,tr*1.25); // شال
+  // الأذرع
+  const ay=shY-.035,ax=tr+.045,alen=tor*.92,ar=dressy?.034:st==='boy'?.04:.045;
+  const armL=limb(body,-ax,ay,alen,ar,old?mat.cloth:mat.skin,mat.skin,ar*1.2),armR=limb(body,ax,ay,alen,ar,old?mat.cloth:mat.skin,mat.skin,ar*1.2);
+  if(!old)[armL,armR].forEach(a=>add(a,G.cyl,mat.cloth,0,-alen*.17,0,ar*1.3,alen*.34,ar*1.3));
+  // الرأس والوجه
+  const headY=shY+.04+hr*.95;
+  add(body,G.cyl,mat.skin,0,shY+.02,0,.04,.08,.04);
+  const head=add(body,G.sph,mat.skin,0,headY,0,hr,hr*1.06,hr);
+  for(const s of[-1,1])add(body,G.sph,mat.dark,s*hr*.36,headY+hr*.02,hr*.9,.02,.024,.016);
+  add(body,G.sph,mat.skin,0,headY-hr*.1,hr*.99,.022,.02,.02);
+  // الشعر
+  const cap=(hy,hz,sc)=>{const o=add(body,G.cap,mat.hair,0,hy,hz,hr*sc,hr*sc,hr*sc);o.rotation.x=-.6;return o};
+  if(st==='man'){cap(headY+hr*.1,-hr*.06,1.08);add(body,G.box,mat.hair,0,headY-hr*.3,hr*.93,.1,.02,.03)}
+  else if(st==='boy'){cap(headY+hr*.1,-hr*.05,1.08)}
+  else if(st==='woman'){cap(headY+hr*.1,-hr*.05,1.1);add(body,G.sph,mat.hair,0,headY-hr*.55,-hr*.62,hr*1.0,hr*1.5,hr*.5)}
+  else if(st==='girl'){
+    cap(headY+hr*.1,-hr*.05,1.1);
+    for(const s of[-1,1]){add(body,G.sph,mat.hair,s*hr*1.05,headY-hr*.25,-hr*.15,hr*.42,hr*.6,hr*.42);add(body,G.sph,mat.cloth,s*hr*.98,headY+hr*.1,-hr*.1,hr*.2)}
+  }else if(st==='oldman'){
+    const t=add(body,G.torus,mat.hair,0,headY-hr*.05,-hr*.1,hr*.95);t.rotation.x=Math.PI/2;
+    add(body,G.sph,mat.hair,0,headY-hr*.72,hr*.42,hr*.68,hr*.55,hr*.5);add(body,G.box,mat.hair,0,headY-hr*.3,hr*.94,.11,.022,.03);
+    for(const s of[-1,1]){const gl=add(body,G.ring2,mat.dark,s*hr*.4,headY+hr*.02,hr*.93,.04);gl.scale.z=.3}
+  }else if(st==='oldwoman'){
+    cap(headY+hr*.1,-hr*.05,1.1);add(body,G.sph,mat.hair,0,headY+hr*.78,-hr*.4,hr*.42);
+    for(const s of[-1,1]){const gl=add(body,G.ring2,mat.dark,s*hr*.4,headY+hr*.02,hr*.93,.038);gl.scale.z=.3}
+  }
+  // العكاز للعجوز
+  if(old){
+    const hy=ay-Math.cos(.5)*alen,ch=hy+.05,cz=Math.sin(.5)*alen;
+    add(body,G.cyl,mat.wood,ax,ch/2,cz,.014,ch,.014);add(body,G.sph,mat.wood,ax,ch,cz,.03);
+  }
+  const root=new T.Group();root.add(g);
+  const sh=new T.Mesh(S3.shGeo,new T.MeshBasicMaterial({map:S3.shTex,transparent:true,depthWrite:false}));sh.position.y=.004;
+  const ring=new T.Mesh(S3.ringGeo,new T.MeshBasicMaterial({color:col,transparent:true,opacity:.6,depthWrite:false,side:T.DoubleSide}));ring.position.y=.006;
+  root.add(sh,ring);S3.sc.add(root);
+  return {root,g,body,sh,ring,legL,legR,armL,armR,head,mats:Object.values(mat),type:ty,col,
+    cx:null,cz:0,tx:0,tz:0,ry:0,hop:-1,sl:null,sc:1,sct:1,moving:false};
+}
+function s3free(p){
+  if(!p)return;S3.sc.remove(p.root);
+  p.mats.forEach(m=>m.dispose());p.sh.material.dispose();p.ring.material.dispose();
+}
+function s3sync(){
+  const wrap=$('boardWrap');
+  if(!room||(room.game||'snakes')!=='snakes'||isWar()||room.state==='lobby'||!s3init()){wrap.classList.remove('s3');return}
+  wrap.classList.add('s3');
+  const pl=room.players,box=$('toks');
+  while(S3.pawns.length>pl.length)s3free(S3.pawns.pop());
+  pl.forEach((pl_,i)=>{
+    let p=S3.pawns[i];const ty=i%S3_T.length;
+    if(!p||p.type!==ty||p.col!==pl_.color){s3free(p);p=S3.pawns[i]=s3build(ty,pl_.color)}
+    const t=box.children[i],n=disp[i]||0;
+    if(n&&t){
+      p.tx=parseFloat(t.style.left)/10;p.tz=parseFloat(t.style.top)/10;
+      p.sct=t.style.width?parseFloat(t.style.width)/4.6:1;
+    }else{p.tx=.6+i*.62;p.tz=10.3;p.sct=1}   // اللي ما بدأ بعد: واقف على حافة اللوحة
+    if(p.cx==null){p.cx=p.tx;p.cz=p.tz;p.sc=p.sct}
+  });
+  s3kick();
+}
+function s3hop(i){const p=S3.pawns[i];if(p){p.hop=performance.now();s3kick()}}
+function s3snakePath(s){
+  const a=xy(+s),z=xy(SNAKES[s]),dx=z.x-a.x,dy=z.y-a.y,len=Math.hypot(dx,dy),ux=dx/len,uy=dy/len,nx=-uy,ny=ux;
+  const N=52,waves=Math.max(1.5,len/15),amp=Math.min(3.4,len*.17),P=[];
+  for(let i=0;i<=N;i++){const t=i/N,off=Math.sin(t*waves*2*Math.PI)*amp*Math.min(1,t*6);P.push([(a.x+ux*len*t+nx*off)/10,(a.y+uy*len*t+ny*off)/10])}
+  return P;
+}
+// صعود السلم بخط مستقيم، ونزول الحية على جسمها المتموّج بالضبط
+function s3slide(i,from,to){
+  const p=S3.pawns[i];if(!p)return 0;
+  const snake=SNAKES[from]===to,a=xy(from),b=xy(to);
+  const path=snake?s3snakePath(from):[[a.x/10,a.y/10],[b.x/10,b.y/10]];
+  const cum=[0];for(let k=1;k<path.length;k++)cum.push(cum[k-1]+Math.hypot(path[k][0]-path[k-1][0],path[k][1]-path[k-1][1]));
+  const len=cum[cum.length-1],dur=snake?Math.min(2200,700+len*170):Math.min(2600,900+len*230);
+  p.sl={path,cum,len,t0:performance.now(),dur,kind:snake?'slide':'climb'};p.cx=path[0][0];p.cz=path[0][1];
+  s3kick();return dur;
+}
+function s3kick(){if(S3.ok&&!S3.raf){S3.last=performance.now();S3.raf=requestAnimationFrame(s3tick)}}
+function s3tick(now){
+  S3.raf=0;
+  if(!S3.ok||!$('boardWrap').classList.contains('s3')||document.hidden)return;
+  const dt=Math.min(.05,(now-S3.last)/1000);S3.last=now;
+  let busy=false;
+  const winner=room&&room.state==='done'?room.winner:-1;
+  S3.pawns.forEach((p,i)=>{
+    if(!p)return;
+    const P=S3_T[p.type];let pose='idle',ph=0,y=0,hd=null;
+    if(p.sl){
+      const s=p.sl,t=Math.min(1,(now-s.t0)/s.dur),e=s.kind==='slide'?t*t*(3-2*t):t,d=e*s.len;
+      let k=1;while(k<s.cum.length-1&&s.cum[k]<d)k++;
+      const a=s.path[k-1],b=s.path[k],sg=(s.cum[k]-s.cum[k-1])||1,u=Math.min(1,Math.max(0,(d-s.cum[k-1])/sg));
+      p.cx=a[0]+(b[0]-a[0])*u;p.cz=a[1]+(b[1]-a[1])*u;
+      hd=Math.atan2(b[0]-a[0],b[1]-a[1]);pose=s.kind;ph=d*7;busy=true;
+      if(t>=1)p.sl=null;
+    }else{
+      const dx=p.tx-p.cx,dz=p.tz-p.cz,dist=Math.hypot(dx,dz);
+      if(dist>.004){
+        const stp=Math.min(dist,Math.max(5.5,dist*6)*dt);p.cx+=dx/dist*stp;p.cz+=dz/dist*stp;busy=true;
+        if(dist>.03){hd=Math.atan2(dx,dz);pose='walk';ph=now*.0165}
+      }else{p.cx=p.tx;p.cz=p.tz}
+      if(p.hop>=0){const t=(now-p.hop)/190;if(t>=1)p.hop=-1;else{y=Math.sin(t*Math.PI)*.1;busy=true}}
+    }
+    if(i===winner){pose='win';busy=true}
+    // اتجاه النظر: بأتجاه الحركة، وإذا وقفت يرجع للمواجهة
+    let da=(hd==null?0:hd)-p.ry;da=Math.atan2(Math.sin(da),Math.cos(da));
+    p.ry+=da*Math.min(1,dt*14);if(Math.abs(da)>.02)busy=true;
+    let lL=0,lR=0,aL=0,aR=0,bx=P.stoop||0,by=0;
+    if(pose==='walk'){const s=Math.sin(ph);lL=s*P.amp;lR=-s*P.amp;aL=-s*P.amp*.8;aR=s*P.amp*.8;by=Math.abs(s)*.02}
+    else if(pose==='climb'){const s=Math.sin(ph);lL=-.45+s*.7;lR=-.45-s*.7;aL=-2.45+s*.5;aR=-2.45-s*.5;bx=.1}
+    else if(pose==='slide'){lL=lR=-1.3;aL=aR=-2.7;bx=-.5;by=-.03}
+    else if(pose==='win'){const s=Math.sin(now/110);aL=aR=-2.9+s*.3;lL=s*.3;lR=-s*.3;y=Math.abs(Math.sin(now/200))*.2}
+    if(P.cane&&pose!=='climb'&&pose!=='slide'&&pose!=='win')aR=-.5;
+    p.legL.rotation.x=lL;p.legR.rotation.x=lR;
+    p.armL.rotation.set(aL,0,.1);p.armR.rotation.set(aR,0,-.1);
+    p.body.rotation.x=bx;p.body.position.y=by+y;p.g.rotation.y=p.ry;
+    p.sc+=(p.sct-p.sc)*Math.min(1,dt*10);p.root.scale.setScalar(p.sc*.92);
+    p.root.position.set(p.cx,0,p.cz);
+    p.sh.scale.setScalar(Math.max(.4,1-(y+by)*1.5));
+    const turn=room&&room.state==='play'&&room.turn===i;
+    p.ring.material.opacity=turn?1:.55;p.ring.scale.setScalar(turn?1.12:.95);
+  });
+  S3.r.render(S3.sc,S3.cam);
+  if(busy)S3.raf=requestAnimationFrame(s3tick);
+}
+function s3ready(){if(room&&(room.game||'snakes')==='snakes'&&room.state!=='lobby')placeToks()}
 function placeToks(){
   if(!room)return;
   const box=$('toks');
@@ -1204,6 +1416,7 @@ function placeToks(){
     t.style.background=p.color;t.classList.toggle('me',i===room.you);
     t.style.left=(n?pt.x+ox:3+i*5)+'%';t.style.top=(n?pt.y+oy:97)+'%';
   });
+  try{s3sync()}catch(e){console.error(e)}
 }
 function updateSub(){
   if(!room||room.state!=='lobby')return;
@@ -1226,7 +1439,7 @@ function render(){
     for(let i=0;i<room.max;i++){
       const p=room.players[i],d=document.createElement('div');d.className='slot'+(p?'':' empty');
       if(p){const c=document.createElement('span');c.className='dot';c.style.background=p.color;d.append(c,
-        document.createTextNode((room.game==='mheibes'?(i%2?'🔵 ':'🔴 '):'')+(room.mode==='battle'&&room.game!=='ludo'?(p.pick!=null?SBC[p.pick]:'🎲')+' ':'')+p.name+(i===room.host&&!room.pub?' 👑':'')+(i===room.you?' (أنت)':'')))}
+        document.createTextNode((room.game==='mheibes'?(i%2?'🔵 ':'🔴 '):'')+(room.mode==='battle'&&room.game!=='ludo'?(p.pick!=null?SBC[p.pick]:'🎲')+' ':'')+((room.game||'snakes')==='snakes'&&room.mode!=='battle'?S3_EMOJI[i%S3_EMOJI.length]+' ':'')+p.name+(i===room.host&&!room.pub?' 👑':'')+(i===room.you?' (أنت)':'')))}
       else d.textContent='بانتظار لاعب...';
       s.appendChild(d);
     }
@@ -1247,7 +1460,7 @@ function render(){
   room.players.forEach((p,i)=>{
     const c=document.createElement('div');c.className='chip'+(i===room.turn&&room.state==='play'?' turn':'')+(p.online?'':' off');c.id='chip'+i;
     const d=document.createElement('span');d.className='dot';d.style.background=p.color;
-    const bt=room.mode==='battle'&&p.cls!=null?' '+SBC[p.cls]+'♥'.repeat(Math.max(0,p.hp)):'';c.append(d,document.createTextNode(p.name+bt+(p.online?'':' ⚠️')));chips.appendChild(c);
+    const bt=room.mode==='battle'&&p.cls!=null?' '+SBC[p.cls]+'♥'.repeat(Math.max(0,p.hp)):'';c.append(d,document.createTextNode((room.mode!=='battle'?S3_EMOJI[i%S3_EMOJI.length]+' ':'')+p.name+bt+(p.online?'':' ⚠️')));chips.appendChild(c);
   });
   $('boardWrap').classList.toggle('war',isWar());if(isWar())drawWarBoard();
   renderSbAct();placeToks();fitBoard();
