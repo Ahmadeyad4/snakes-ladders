@@ -324,7 +324,6 @@ function sendRoom(room) {
       pub: !!room.pub,
       game: room.game || 'snakes',
       mode: room.mode || 'classic',
-      env: room.env || 'mine',
       min: minPlayers(room),
       mf: room.game === 'mafia' && mafia ? mafia.view(room, i) : null,
       mh: room.game === 'mheibes' && mheibes ? mheibes.view(room, i) : null,
@@ -443,8 +442,6 @@ function detach(ws) {
   sendRoom(room);
 }
 
-const ENVS = ['mine', 'classic', 'desert', 'spring', 'snow', 'rain', 'night'];
-const validEnv = v => (ENVS.includes(v) ? v : 'mine');
 const validCls = v => (Number.isInteger(v) && v >= 0 && v <= 3 ? v : null);
 function initGame(room) {
   if (room.game === 'ludo') ludo.init(room);
@@ -708,7 +705,7 @@ wss.on('connection', (ws, req) => {
       const game = m.game === 'ludo' && ludo ? 'ludo' : (m.game === 'mafia' && mafia ? 'mafia' : (m.game === 'mheibes' && mheibes ? 'mheibes' : 'snakes'));
       const max = game === 'ludo' ? 4 : (game === 'mafia' ? mafia.MAX : (game === 'mheibes' ? mheibes.MAX : (m.max === 6 ? 6 : 4)));
       const mode = (game === 'ludo' && (m.mode === 'quick' || m.mode === 'battle')) || (game === 'snakes' && m.mode === 'battle') ? m.mode : 'classic';
-      const room = { code: makeCode(), max, game, mode, env: game === 'snakes' ? validEnv(m.env) : 'mine', players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
+      const room = { code: makeCode(), max, game, mode, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
       const player = { token, name: ws.user ? ws.user.name : cleanName(m.name), color: COLORS[0], pos: 0, ws: null, pick: validCls(m.cls) };
       room.players.push(player);
       rooms.set(room.code, room);
@@ -768,7 +765,7 @@ wss.on('connection', (ws, req) => {
         if (r.pub && (r.game || 'snakes') === rgame && (r.mode || 'classic') === rmode && r.state === 'lobby' && r.players.length < r.max && !r.players.some(p => p.token === token)) { room = r; break; }
       }
       if (!room) {
-        room = { code: makeCode(), max: rgame === 'mafia' ? mafia.MAX : rgame === 'mheibes' ? mheibes.MAX : 4, game: rgame, mode: rmode, env: rgame === 'snakes' ? validEnv(m.env) : 'mine', pub: true, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
+        room = { code: makeCode(), max: rgame === 'mafia' ? mafia.MAX : rgame === 'mheibes' ? mheibes.MAX : 4, game: rgame, mode: rmode, pub: true, players: [], state: 'lobby', host: 0, turn: 0, winner: -1, timer: null, emptySince: null };
         rooms.set(room.code, room);
       }
       const player = { token, name: ws.user.name, color: pickColor(room), pos: 0, ws: null, pick: validCls(m.cls) };
@@ -799,10 +796,6 @@ wss.on('connection', (ws, req) => {
       const room = ws.room;
       if (!room || room.state !== 'lobby' || room.game === 'ludo' || room.game === 'mafia' || room.game === 'mheibes' || room.mode !== 'battle' || !room.players.includes(ws.player)) return;
       ws.player.pick = validCls(m.cls); sendRoom(room);
-    } else if (m.t === 'env') {
-      const room = ws.room;
-      if (!room || room.state !== 'lobby' || room.game === 'ludo' || room.game === 'mafia' || room.game === 'mheibes' || room.players[room.host] !== ws.player) return;
-      room.env = validEnv(m.env); sendRoom(room);
     } else if (m.t === 'sshoot') {
       const room = ws.room;
       if (!room || room.game === 'ludo' || room.players[room.turn] !== ws.player) return;
